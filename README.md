@@ -13,7 +13,7 @@ The layout is a JSON file ([example](examples/layout.example.json)); see [SKILL.
 ## Install
 
 ```sh
-git clone <this repo> ~/.claude/skills/lv1-session
+git clone https://github.com/DominikKriss/lv1-session-skill.git ~/.claude/skills/lv1-session
 ```
 
 Then ask Claude Code to prepare or edit an LV1 session, or run `/lv1-session`. The scripts also run on their own:
