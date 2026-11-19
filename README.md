@@ -42,3 +42,11 @@ python3 ~/.claude/skills/lv1-session/scripts/diff_lv1_sessions.py before.emo aft
 ## Caution
 
 Unofficial; not affiliated with or supported by Waves or Behringer. The `.emo` format was worked out by reverse-engineering, so keep a backup of every session. Load the edited session in LV1 before saving anything, or LV1 will write the old in-memory state over it. Check one channel in LV1 after each build.
+
+## Contributing
+
+Issues and pull requests welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Format findings (one change made in LV1, diffed with `diff_lv1_sessions.py`) are the most useful contribution.
+
+## License
+
+[GPL-3.0](LICENSE). Waves, eMotion LV1 and SoundGrid are trademarks of Waves Audio Ltd.; Behringer and X32 are trademarks of Music Tribe. They are named only to describe compatibility.
