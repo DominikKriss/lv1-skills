@@ -194,8 +194,8 @@ def build_chunk(template, names, values):
     return re.sub(r'<Parameters Type="RealWorld">(.*?)</Parameters>', repl, template, flags=re.S)
 
 
-def apply(cur, obj_ids, x32_scene, ch_map, snaps):
-    """ch_map: {x32_channel: lv1_input_index}. Returns report lines."""
+def apply(cur, obj_ids, x32_scene, ch_map, snaps, fixed_rack=False):
+    """ch_map: {x32_channel: lv1_input_index}. fixed_rack: keep the layout's plugin order. Returns report lines."""
     ch, _head, xname = parse(x32_scene)
     names = {p: param_names(p) for p in ("EMO-F2", "EMO-D5", "EMO-Q4")}
     pid = dict(cur.execute("select name, id from chainer_params"))
@@ -221,8 +221,6 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps):
                 old = cur.execute("select preset_id from snapshot_plugin where plug_id=? and snapshot_id=?",
                                   (plugs[pname], snap)).fetchone()
                 if old and old[0] != new_id:
-                    cur.execute("update plugin_preset set ref_count=ref_count-1 where id=?", (old[0],))
-                    cur.execute("update plugin_preset set ref_count=ref_count+1 where id=?", (new_id,))
                     cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?",
                                 (new_id, plugs[pname], snap))
         for snap in snaps:
@@ -231,7 +229,7 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps):
                         [(f"PARAM_INPUT_DIGITAL_TRIM{sfx}", trim) for sfx in ("", "_L", "_R")]:
                 cur.execute("insert or replace into snapshot_chainer_params values (?,?,?,?)",
                             (chainer, snap, pid[n], float(x)))
-        if s["comp_post_eq"]:
+        if s["comp_post_eq"] and not fixed_rack:
             slots = dict(cur.execute("select plugin_name, slot from plug where chainer_id=?", (chainer,)))
             d5, q4 = plugs["EMO-D5"], plugs["EMO-Q4"]
             cur.execute("update plug set slot=-1 where id=?", (d5,))
@@ -246,6 +244,9 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps):
             notes.append(f"ratio {s['comp']['ratio']:g} -> 20")
         if s["gate"] and s["gate"]["rel"] > 1000:
             notes.append(f"gate release {s['gate']['rel']:g} -> 1000 ms")
-        order = "F2 Q4 D5" if s["comp_post_eq"] else "F2 D5 Q4"
+        if fixed_rack:
+            order = "rack from layout" + ("" if s["comp_post_eq"] or not s["comp"] else ", X32 comp was PRE EQ")
+        else:
+            order = "F2 Q4 D5" if s["comp_post_eq"] else "F2 D5 Q4"
         report.append(f"X32 ch {x32n} {xname[x32n]} -> LV1 ch {lv1i + 1}: {order}" + (f" ({'; '.join(notes)})" if notes else ""))
     return report
