@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-GB
+reviews:
+  profile: chill
+  high_level_summary: true
+  path_instructions:
+    - path: "**/*.py"
+      instructions: |
+        - Python 3 standard library only.
+        - Scripts write .emo sessions (SQLite): they must never write the input file, must end with an integrity check, and must keep preset ref_counts correct.
+        - Never guess an LV1 format code: a new field must be backed by a finding in the skill's reference/emo-format.md.
+    - path: "*/SKILL.md"
+      instructions: |
+        - Script changes must be reflected here and in reference/emo-format.md in the same PR.
+        - Keep it generic: no band, venue, channel, device or personal names.
+    - path: "**/*.md"
+      instructions: |
+        - Flag any personal data, email address, session content or show-specific names.

@@ -133,7 +133,7 @@ If there is a lesson:
 3. **Dry run and ask.** Run `bash <skill-dir>/scripts/contribute.sh --title "<title>" --body-file <file> --dry-run`. Tell the user in two or three lines what the skill learned, show the dry-run output (GitHub account, commit author, files) and ask whether to open the pull request from their account. If the commit author email is one they'd rather not publish, offer their GitHub noreply address (`<id>+<login>@users.noreply.github.com`) with `--email`.
 4. **Only after a clear yes**, run it again without `--dry-run` and give the user the PR link. The maintainer reviews it; the user's local copy keeps the change meanwhile. On a no, leave the change local or revert it, as the user prefers.
 
-The script needs the GitHub CLI logged in (`gh auth login`). It forks the repo to the user's account, commits only this skill folder on a `learn/…` branch and refuses session / scene files. If the skill was copied rather than cloned, it compares the folder with a fresh clone of `main`; check the file list for upstream changes showing as removed. Without `gh`, offer an issue at https://github.com/DominikKriss/lv1-skills/issues with the same body instead.
+The script needs the GitHub CLI logged in (`gh auth login`). It forks the repo to the user's account, commits only this skill folder on a `learn/…` branch and refuses session / scene files. After opening the PR it asks CodeRabbit for a review; mention its comments to the user, the maintainer decides. If the skill was copied rather than cloned, it compares the folder with a fresh clone of `main`; check the file list for upstream changes showing as removed. Without `gh`, offer an issue at https://github.com/DominikKriss/lv1-skills/issues with the same body instead.
 
 ## Prerequisites
 
