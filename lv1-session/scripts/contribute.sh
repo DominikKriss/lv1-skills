@@ -116,7 +116,8 @@ if [ "$LOGIN" = "${UPSTREAM%%/*}" ]; then
   git push -q -u origin "$BRANCH"
 else
   gh repo fork "$UPSTREAM" --clone=false >/dev/null 2>&1 || true
-  FORK_URL="https://github.com/$LOGIN/${UPSTREAM##*/}.git"
+  FORK_NAME="$(gh api "repos/$UPSTREAM/forks" --paginate --jq ".[] | select(.owner.login == \"$LOGIN\") | .name" 2>/dev/null | head -n1 || true)"
+  FORK_URL="https://github.com/$LOGIN/${FORK_NAME:-${UPSTREAM##*/}}.git"
   pushed=0
   for _ in 1 2 3 4 5; do
     if git push -q "$FORK_URL" "$BRANCH"; then pushed=1; break; fi

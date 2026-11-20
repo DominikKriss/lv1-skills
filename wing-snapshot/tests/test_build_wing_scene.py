@@ -86,6 +86,27 @@ class Guards(unittest.TestCase):
         self.assertEqual(code, 1)
 
 
+class Outputs(unittest.TestCase):
+    def test_auto_outputs_skip_explicit_sockets(self):
+        lay = json.loads((EXAMPLES / "layout-auto.example.json").read_text())
+        lay["outputs"][0]["sock"] = ["A", 1]
+        code, out, snap = run(lay)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(snap["ae_data"]["io"]["out"]["A"]["1"], {"grp": "BUS", "in": 1})
+        self.assertEqual(snap["ae_data"]["io"]["out"]["A"]["2"], {"grp": "BUS", "in": 3})
+
+    def test_output_over_base_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d, "base.snap")
+            base.write_text(fixtures.snapshot())
+            link = Path(d, "link.snap")
+            link.symlink_to(base)
+            with contextlib.redirect_stdout(io.StringIO()):
+                code = b.main([str(base), str(EXAMPLES / "layout-auto.example.json"), str(link)])
+            self.assertEqual(code, 1)
+            self.assertEqual(base.read_text(), fixtures.snapshot())
+
+
 class X32(unittest.TestCase):
     def test_processing_from_scene(self):
         lay = json.loads((EXAMPLES / "layout-auto.example.json").read_text())
@@ -103,6 +124,16 @@ class X32(unittest.TestCase):
         self.assertEqual(ch["1"]["flt"]["hcf"], 8000)
         self.assertEqual(ch["2"]["flt"]["lcf"], 120)
         self.assertFalse(ch["6"]["flt"]["lc"])
+
+
+class X32EqOff(unittest.TestCase):
+    def test_cut_stays_off_when_x32_eq_off(self):
+        lay = json.loads((EXAMPLES / "layout-auto.example.json").read_text())
+        lay["processing"] = {"x32_scene": "scene.scn", "from_x32": {"ch.1": 1},
+                             "lowcut_rest": {"freq": 120, "slope": "24", "eq_token": "CUT", "skip": []}}
+        code, out, snap = run(lay, fixtures.SCENE.replace("/ch/01/eq ON", "/ch/01/eq OFF"))
+        self.assertEqual(code, 0, out)
+        self.assertFalse(snap["ae_data"]["ch"]["1"]["flt"]["hc"])
 
 
 if __name__ == "__main__":

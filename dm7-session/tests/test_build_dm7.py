@@ -64,5 +64,14 @@ class X32(unittest.TestCase):
             b.x32_processing(fixtures.FakeSession(), 0, ch, [], "CH 1")
 
 
+class EqOff(unittest.TestCase):
+    def test_lpf_off_when_x32_eq_off(self):
+        ch = fixtures.x32_channel()
+        ch["eq"] = ["OFF"]
+        s = fixtures.FakeSession()
+        b.x32_processing(s, 0, ch, [], "CH 1")
+        self.assertEqual(s.values[(IC + "/LPF", "On", (0, 0))], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

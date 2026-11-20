@@ -120,6 +120,12 @@ def pair(s, ch_l):
         s.mix(IC + "/ToStereo", "Pan", (k - 1, 0), 0)
 
 
+def unpair(s, ch):
+    s.mix(IC, "GainGang", (ch - 1,), 0)
+    s.mix(IC, "DelayGang", (ch - 1,), 0)
+    s.mix(IC + "/Signal", "Relation", (ch - 1, 0), 0)
+
+
 def hpf(s, c, on, freq, slope):
     s.mix(IC + "/HPF", "On", (c, 0), 1 if on else 0)
     s.mix(IC + "/HPF", "Frequency", (c, 0), hz(freq))
@@ -215,7 +221,7 @@ def x32_processing(s, c, x, notes, who):
         s.mix(e + "/Band", "Gain", (c, 0, 0, k), cdb(g))
         if not ((k == 0 and low) or (k == 3 and high)):
             s.mix(e + "/Band", "Q", (c, 0, 0, k), int(round(q * 1000)))
-    s.mix(IC + "/LPF", "On", (c, 0), 1 if lpf else 0)
+    s.mix(IC + "/LPF", "On", (c, 0), 1 if lpf and x["eq"][0] == "ON" else 0)
     if lpf:
         s.mix(IC + "/LPF", "Frequency", (c, 0), hz(lpf[0]))
         s.mix(IC + "/LPF", "Slope", (c, 0), 12)
@@ -269,10 +275,16 @@ def build(s, lay, base_dir):
         i["tio"] = (n // lay["tio_inputs"] + 1, n % lay["tio_inputs"] + 1)
     for n, i in enumerate(play):
         i["dante"] = lay["playback_dante_start"] + n
+    if play and lay["playback_dante_start"] <= len(tio_ports):
+        raise Refuse(f"playback from Dante IN {lay['playback_dante_start']} overlaps the stagebox inputs 1-{len(tio_ports)}.")
+    kinds = [f["kind"] for f in lay["fx_sends"]]
+    if len(set(kinds)) != len(kinds):
+        raise Refuse("two fx_sends share a kind; each FX kind feeds one mix.")
 
     for i in chans:
         c = i["ch"] - 1
         if i.get("spare"):
+            unpair(s, i["ch"])
             s.mix(IC + "/Label", "Name", (c, 0), "spare")
             s.mix(IC + "/Label", "Color", (c, 0), col["spare"])
             s.mix(IC + "/InPatch/Bank", "Source", (c, 0, 0), 0)
@@ -300,6 +312,8 @@ def build(s, lay, base_dir):
                          f"{' + next' if 'half' in i else ''}")
         if i.get("half") == "L":
             pair(s, i["ch"])
+        elif "half" not in i:
+            unpair(s, i["ch"])
 
     fx = fx_slots(s)
     ret_ch = next_ch + (next_ch + 1) % 2
@@ -370,7 +384,7 @@ def main(argv):
         print(__doc__.strip())
         return 2
     base, layout, out = args
-    if os.path.abspath(base) == os.path.abspath(out):
+    if os.path.abspath(base) == os.path.abspath(out) or (os.path.exists(out) and os.path.samefile(base, out)):
         print("refused: write a new file, not the base.")
         return 1
     with open(base, "rb") as fh:
