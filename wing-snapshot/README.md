@@ -14,7 +14,10 @@ lists every key. Open the result in WING-Edit, save it there, load that save on 
 
 - Built and spot-checked against a WING-Edit 3.2.1 INIT save (`snapshot.10`, one-line JSON), which round-trips
   byte for byte through the builder.
-- Not yet confirmed by a WING-Edit load: everything marked unconfirmed in `reference/wing-format.md`.
+- 2026-11-20: a generated snapshot (32 inputs, explicit AES50 A / local patch, groups with FX inserts and bus
+  dynamics models, FX buses, matrices, DCAs) opened in WING-Edit without any visible error. Individual values not
+  yet checked one by one.
+- Not yet confirmed field by field: everything marked unconfirmed in `reference/wing-format.md`.
 
 ## Tests
 

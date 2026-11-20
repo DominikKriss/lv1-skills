@@ -11,7 +11,10 @@ python3 vendor/yamaha_tool.py show event.dmxf
 ## Status
 
 - Built against a DM Editor 2.0.1 DM7 session: 1,304 changes for a 60-channel layout, `yamaha_tool.py check` ok.
-- Not yet confirmed by a DM Editor load: the writes beyond yamaha_tool's proven set (see `SKILL.md`).
+- 2026-11-20: the generated session opened in DM Editor without any visible error (base without Tios mounted and
+  with an empty FX rack, so no Dante subscriptions or FX routing were written). Individual values not yet checked
+  one by one.
+- Not yet confirmed field by field: the writes beyond yamaha_tool's proven set (see `SKILL.md`).
 - Tio output patch (which DM7 Dante output feeds each Tio output) is not written: patch it in DM Editor or Dante
   Controller.
 
