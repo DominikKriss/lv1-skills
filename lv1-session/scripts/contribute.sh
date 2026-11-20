@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Opens a pull request to the lv1-skills repo with the changes made to this skill folder,
+# Opens a pull request to the mixing-console-skills repo with the changes made to this skill folder,
 # from the GitHub account that is active in `gh`. Run with --dry-run first and show the output to the user.
 set -euo pipefail
 
-UPSTREAM="DominikKriss/lv1-skills"
+UPSTREAM="DominikKriss/mixing-console-skills"
 usage() {
   cat <<EOF
 usage: contribute.sh --title "<PR title>" --body-file <file> [--branch <name>] [--email <commit email>] [--dry-run]

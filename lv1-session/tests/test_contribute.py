@@ -13,8 +13,8 @@ FAKE_GH = """#!/bin/sh
 echo "gh $*" >> "$FAKE_GH_LOG"
 case "$1 $2" in
   "api user") [ -n "$FAKE_GH_LOGIN" ] || exit 1; echo "$FAKE_GH_LOGIN" ;;
-  "pr create") [ -z "$FAKE_GH_FAIL_PR" ] || exit 1; echo "https://github.com/DominikKriss/lv1-skills/pull/99" ;;
-  "pr list") [ -z "$FAKE_GH_PR_OPEN" ] || echo "https://github.com/DominikKriss/lv1-skills/pull/98" ;;
+  "pr create") [ -z "$FAKE_GH_FAIL_PR" ] || exit 1; echo "https://github.com/DominikKriss/mixing-console-skills/pull/99" ;;
+  "pr list") [ -z "$FAKE_GH_PR_OPEN" ] || echo "https://github.com/DominikKriss/mixing-console-skills/pull/98" ;;
 esac
 exit 0
 """
@@ -30,7 +30,7 @@ class Contribute(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
         self.hub = root / "hub"
-        upstream = self.hub / "DominikKriss" / "lv1-skills.git"
+        upstream = self.hub / "DominikKriss" / "mixing-console-skills.git"
         upstream.parent.mkdir(parents=True)
         seed = root / "seed"
         (seed / "lv1-session" / "scripts").mkdir(parents=True)
@@ -55,7 +55,7 @@ class Contribute(unittest.TestCase):
         git(seed, "commit", "-q", "-m", "seed")
         git(seed, "push", "-q", str(upstream), "HEAD:main")
         self.clone = root / "clone"
-        git(root, "clone", "-q", "https://github.com/DominikKriss/lv1-skills.git", str(self.clone))
+        git(root, "clone", "-q", "https://github.com/DominikKriss/mixing-console-skills.git", str(self.clone))
         self.skill = self.clone / "lv1-session"
         self.body = root / "body.md"
         self.body.write_text("body\n")
@@ -120,13 +120,13 @@ class Contribute(unittest.TestCase):
         self.assertIn("@coderabbitai review", log)
 
     def test_contributor_pushes_to_their_own_fork(self):
-        fork = self.hub / "alice" / "lv1-skills.git"
+        fork = self.hub / "alice" / "mixing-console-skills.git"
         fork.parent.mkdir()
         git(self.hub, "clone", "-q", "--bare", str(self.upstream), str(fork))
-        bob = self.hub / "bob" / "lv1-skills.git"
+        bob = self.hub / "bob" / "mixing-console-skills.git"
         bob.parent.mkdir()
         git(self.hub, "clone", "-q", "--bare", str(self.upstream), str(bob))
-        git(self.clone, "remote", "add", "fork", "https://github.com/bob/lv1-skills.git")
+        git(self.clone, "remote", "add", "fork", "https://github.com/bob/mixing-console-skills.git")
         (self.skill / "SKILL.md").write_text("skill v2\n")
         r = self.run_script(login="alice")
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -138,7 +138,7 @@ class Contribute(unittest.TestCase):
         git(self.upstream, "branch", "dev", "main")
         single = Path(self.tmp.name) / "single"
         git(self.tmp.name, "clone", "-q", "--single-branch", "--branch", "dev",
-            "https://github.com/DominikKriss/lv1-skills.git", str(single))
+            "https://github.com/DominikKriss/mixing-console-skills.git", str(single))
         (single / "README.md").write_text("local\n")
         git(single, "commit", "-qam", "local")
         (single / "lv1-session" / "SKILL.md").write_text("skill v2\n")

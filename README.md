@@ -1,33 +1,35 @@
-# LV1 skills for Claude Code
+# Mixing console skills for Claude Code
 
-[Claude Code](https://claude.com/claude-code) skills for the Waves eMotion LV1 mixer: prepare, change and review LV1 shows with an AI assistant, without clicking through every channel and bus.
+Live audio mixing console skillset: [Claude Code](https://claude.com/claude-code) skills that prepare, change and review shows for the Waves eMotion LV1, Behringer WING and Yamaha DM7 by script, without clicking through every channel and bus.
 
-LV1 session files (`.emo`) are SQLite databases. These skills read and write them by script, based on a format reference worked out by comparing sessions saved in LV1.
+Each skill reads and writes the console's own show file (LV1 `.emo` SQLite sessions, WING `.snap` JSON snapshots, DM7 `.dmxf` MBDF sessions) on top of a file the console's editor saved, and the result goes back through that editor before it reaches a desk.
 
 ## Skills
 
 | Skill | What it does |
 |---|---|
 | [`lv1-session`](lv1-session/) | Build a session from a layout (inputs, IEM / monitor mixes, FX, matrices), convert Behringer X32 channel processing to eMo F2 / D5 / Q4, edit a session you already worked on (copy a mix's setup to other mixes, Nx IEM, talkback, user keys), and review what changed between two sessions. |
+| [`wing-snapshot`](wing-snapshot/) | Build a WING snapshot from a layout on a WING-Edit INIT save: names, colours, AES50 / local patch with stereo sockets, monitor, group and FX buses, inserts, matrices, DCAs, output patch, and X32 channel processing. |
+| [`dm7-session`](dm7-session/) | Build a DM7 session from a layout on a DM Editor 2.0.1 session: names, pairs, Dante / Tio patch, monitor and FX mixes, FX routing, matrices, Dante outputs, and X32 channel processing. |
 
 ## Install
 
 ```sh
-git clone https://github.com/DominikKriss/lv1-skills.git ~/lv1-skills
+git clone https://github.com/DominikKriss/mixing-console-skills.git ~/mixing-console-skills
 mkdir -p ~/.claude/skills
-ln -s ~/lv1-skills/lv1-session ~/.claude/skills/lv1-session
+for s in lv1-session wing-snapshot dm7-session; do ln -s ~/mixing-console-skills/$s ~/.claude/skills/$s; done
 ```
 
-Then ask Claude Code about your LV1 session, or run `/lv1-session`. `git -C ~/lv1-skills pull` updates.
+Then ask Claude Code about your show, or run `/lv1-session`, `/wing-snapshot` or `/dm7-session`. `git -C ~/mixing-console-skills pull` updates.
 
 ## Requirements
 
-- macOS with Python 3; tested with LV1 17.3.
+- Python 3 (standard library only). LV1: macOS, tested with LV1 17.3. WING: a snapshot from WING-Edit (tested with 3.2.1). DM7: a session from DM Editor 2.0.1 (firmware V2.01).
 - The Waves plugins a skill works with installed through Waves Central (see each skill's README).
 
 ## Caution
 
-Unofficial; not affiliated with or supported by Waves or Behringer. The `.emo` format was worked out by reverse-engineering, so keep a backup of every session. Load an edited session in LV1 before saving anything, or LV1 will write the old in-memory state over it. Check the result in LV1 before a show.
+Unofficial; not affiliated with or supported by Waves, Behringer or Yamaha. The formats were worked out by reverse-engineering, so keep a backup of every show. Open every generated file in the console's editor (LV1, WING-Edit, DM Editor), check it, save it there, and load only that save on a desk, first at prep, never at the show. For LV1: load an edited session before saving anything, or LV1 writes the old in-memory state over it.
 
 ## Contributing
 
@@ -37,4 +39,4 @@ The skills learn from use: when a run turns up something the skill should know (
 
 ## License
 
-[GPL-3.0](LICENSE). Waves, eMotion LV1 and SoundGrid are trademarks of Waves Audio Ltd.; Behringer and X32 are trademarks of Music Tribe. They are named only to describe compatibility.
+[GPL-3.0](LICENSE). Waves, eMotion LV1 and SoundGrid are trademarks of Waves Audio Ltd.; Behringer, X32 and WING are trademarks of Music Tribe; Yamaha, DM7 and Tio are trademarks of Yamaha Corporation. `dm7-session/vendor/yamaha_tool.py` is MIT-licensed (show-file-skills, see its licence file). They are named only to describe compatibility.
