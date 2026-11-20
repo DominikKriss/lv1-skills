@@ -250,6 +250,14 @@ def fx_slots(s):
     return found
 
 
+def check_layout(lay, n_stagebox, n_playback):
+    if n_playback and lay["playback_dante_start"] <= n_stagebox:
+        raise Refuse(f"playback from Dante IN {lay['playback_dante_start']} overlaps the stagebox inputs 1-{n_stagebox}.")
+    kinds = [f["kind"] for f in lay["fx_sends"]]
+    if len(set(kinds)) != len(kinds):
+        raise Refuse("two fx_sends share a kind; each FX kind feeds one mix.")
+
+
 def build(s, lay, base_dir):
     src, src_dir = lay, base_dir
     if "inputs_from" in lay:
@@ -275,11 +283,7 @@ def build(s, lay, base_dir):
         i["tio"] = (n // lay["tio_inputs"] + 1, n % lay["tio_inputs"] + 1)
     for n, i in enumerate(play):
         i["dante"] = lay["playback_dante_start"] + n
-    if play and lay["playback_dante_start"] <= len(tio_ports):
-        raise Refuse(f"playback from Dante IN {lay['playback_dante_start']} overlaps the stagebox inputs 1-{len(tio_ports)}.")
-    kinds = [f["kind"] for f in lay["fx_sends"]]
-    if len(set(kinds)) != len(kinds):
-        raise Refuse("two fx_sends share a kind; each FX kind feeds one mix.")
+    check_layout(lay, len(tio_ports), len(play))
 
     for i in chans:
         c = i["ch"] - 1

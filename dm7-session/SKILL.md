@@ -59,7 +59,7 @@ Show-specific content isn't a lesson: the user's layout, channel names and level
 
 If there is a lesson:
 
-1. **Make the change in this skill folder**, kept generic (no band, venue, channel or device names), following the repo's `AGENTS.md` and `CONTRIBUTING.md`: `SKILL.md` and `reference/dm7-fields-used.md` updated with the scripts, tests added, Python standard library only.
+1. **Make the change in this skill folder**, kept generic (no band, venue, channel or device names), following the repo's `AGENTS.md` and `CONTRIBUTING.md`: `SKILL.md` and `reference/dm7-fields-used.md` updated with the scripts, tests added, Python standard library only. A fix to `scripts/contribute.sh` is the exception: the script is shared by every skill and publishes only this folder, so offer an issue for it instead of a pull request.
 2. **Write the PR body** to a scratch file: what changed, what happened in the run that showed it, and evidence (DM Editor version, the builder's change count and notes, `vendor/yamaha_tool.py check` on the output, what DM Editor showed after loading the result). No show files or show names.
 3. **Dry run and ask.** Run `bash <skill-dir>/scripts/contribute.sh --title "<title>" --body-file <file> --dry-run`, show the user the output (GitHub account, commit author, files) and ask whether to open the pull request from their account. Offer their GitHub noreply address with `--email` if they'd rather not publish their email.
 4. **Only after a clear yes**, run it without `--dry-run` and give the user the PR link.

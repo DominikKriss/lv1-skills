@@ -1,5 +1,6 @@
 import contextlib
 import io
+import os
 import json
 import tempfile
 import unittest
@@ -105,6 +106,30 @@ class Outputs(unittest.TestCase):
                 code = b.main([str(base), str(EXAMPLES / "layout-auto.example.json"), str(link)])
             self.assertEqual(code, 1)
             self.assertEqual(base.read_text(), fixtures.snapshot())
+
+
+class MoreGuards(unittest.TestCase):
+    def test_two_outputs_on_one_socket_refused(self):
+        lay = json.loads((EXAMPLES / "layout-explicit.example.json").read_text())
+        lay["outputs"][5]["sock"] = ["A", 14]
+        code, out, _ = run(lay)
+        self.assertEqual(code, 1)
+        self.assertIn("already used", out)
+
+    def test_output_over_layout_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            base, lay = Path(d, "base.snap"), Path(d, "layout.json")
+            base.write_text(fixtures.snapshot())
+            text = (EXAMPLES / "layout-auto.example.json").read_text()
+            lay.write_text(text)
+            for out in (lay, Path(d, "sym.json"), Path(d, "hard.json")):
+                if out.name == "sym.json":
+                    out.symlink_to(lay)
+                elif out.name == "hard.json":
+                    os.link(lay, out)
+                with contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(b.main([str(base), str(lay), str(out)]), 1)
+            self.assertEqual(lay.read_text(), text)
 
 
 class X32(unittest.TestCase):

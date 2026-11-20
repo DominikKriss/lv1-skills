@@ -57,8 +57,8 @@ CURRENT="$(git rev-parse --abbrev-ref HEAD)"
 CHANGED="$(git status --porcelain -- "$REL")"
 RESUME=0
 if [ -z "$CHANGED" ]; then
-  # A learn/ branch with skill-only commits: an earlier run committed but didn't finish publishing.
-  if [ "${CURRENT#learn/}" != "$CURRENT" ] && [ -n "$AHEAD" ] \
+  # A learn/ branch, or the branch named with --branch, with skill-only commits: an earlier run committed but didn't finish publishing.
+  if { [ "${CURRENT#learn/}" != "$CURRENT" ] || [ "$CURRENT" = "$BRANCH" ]; } && [ -n "$AHEAD" ] \
      && [ -z "$(git diff --name-only "$UPSTREAM_MAIN" HEAD -- . ":(exclude)$REL")" ]; then
     RESUME=1
     BRANCH="$CURRENT"
@@ -69,6 +69,11 @@ if [ -z "$CHANGED" ]; then
 fi
 if git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n' | grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$|__pycache__'; then
   echo "refusing: session / scene files are among the changes; keep them out of the skill folder" >&2
+  exit 4
+fi
+HISTORY_FILES="$(git log --name-only --format= "$UPSTREAM_MAIN..HEAD" -- "$REL")"
+if printf '%s\n' "$HISTORY_FILES" | grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$'; then
+  echo "refusing: an unpublished commit on this branch holds a session / scene file; it would be published with the history" >&2
   exit 4
 fi
 OUTSIDE="$(git diff --cached --name-only -- . ":(exclude)$REL")"

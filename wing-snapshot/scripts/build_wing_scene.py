@@ -136,7 +136,10 @@ def patch_outputs(snap, lay):
     for o in lay["outputs"]:
         if "sock" in o:
             width = 2 if o.get("stereo") else 1
-            taken.update((o["sock"][0], o["sock"][1] + k) for k in range(width))
+            legs = {(o["sock"][0], o["sock"][1] + k) for k in range(width)}
+            if legs & taken:
+                raise Refuse(f"{o['name']}: output socket {sorted(legs & taken)} is already used by another output.")
+            taken.update(legs)
     outs = [s for s in sockets(lay.get("out_sockets", [])) if s not in taken]
     pos = 0
     for o in lay["outputs"]:
@@ -304,9 +307,10 @@ def main(argv):
         print(__doc__.strip())
         return 2
     base, layout, out = args
-    if os.path.abspath(base) == os.path.abspath(out) or (os.path.exists(out) and os.path.samefile(base, out)):
-        print("refused: write a new file, not the base.")
-        return 1
+    for src in (base, layout):
+        if os.path.abspath(src) == os.path.abspath(out) or (os.path.exists(out) and os.path.samefile(src, out)):
+            print(f"refused: write a new file, not {src}.")
+            return 1
     doc, text, crlf, pretty = load(base)
     trailing = text.endswith("\n")
     if dump(doc, False, pretty, trailing) != text:

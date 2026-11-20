@@ -177,5 +177,25 @@ class Contribute(unittest.TestCase):
         git(self.clone, "commit", "-qam", "local")
         self.assertEqual(self.run_script("--dry-run").returncode, 1)
 
+    def test_resume_on_a_branch_chosen_with_branch(self):
+        (self.skill / "SKILL.md").write_text("skill v2\n")
+        first = self.run_script("--branch", "fix/thing", FAKE_GH_FAIL_PR="1")
+        self.assertEqual(first.returncode, 5, first.stdout + first.stderr)
+        again = self.run_script("--branch", "fix/thing")
+        self.assertEqual(again.returncode, 0, again.stdout + again.stderr)
+        self.assertIn("resuming", again.stdout)
+
+    def test_show_file_committed_on_a_resumed_branch_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "show.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+        self.assertIn("unpublished commit", r.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -128,7 +128,7 @@ Show-specific content isn't a lesson: the user's layout, channel names, levels a
 
 If there is a lesson:
 
-1. **Make the change in this skill folder**, kept generic (no band, venue, channel or device names), following the repo's `CONTRIBUTING.md`: `SKILL.md` and `reference/emo-format.md` updated with the scripts, Python standard library only.
+1. **Make the change in this skill folder**, kept generic (no band, venue, channel or device names), following the repo's `CONTRIBUTING.md`: `SKILL.md` and `reference/emo-format.md` updated with the scripts, Python standard library only. A fix to `scripts/contribute.sh` is the exception: the script is shared by every skill (CI checks the copies match) and publishes only this folder, so offer an issue for it instead of a pull request.
 2. **Write the PR body** to a scratch file: what changed, what happened in the run that showed it, and evidence (LV1 version, the `integrity: ok` lines, the relevant `diff_lv1_sessions.py` lines, whether LV1 loaded the result and showed the change). No session files or show names.
 3. **Dry run and ask.** Run `bash <skill-dir>/scripts/contribute.sh --title "<title>" --body-file <file> --dry-run`. Tell the user in two or three lines what the skill learned, show the dry-run output (GitHub account, commit author, files) and ask whether to open the pull request from their account. If the commit author email is one they'd rather not publish, offer their GitHub noreply address (`<id>+<login>@users.noreply.github.com`) with `--email`.
 4. **Only after a clear yes**, run it again without `--dry-run` and give the user the PR link. The maintainer reviews it; the user's local copy keeps the change meanwhile. On a no, leave the change local or revert it, as the user prefers.

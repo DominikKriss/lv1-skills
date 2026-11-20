@@ -1,4 +1,9 @@
+import contextlib
+import io
+import os
+import tempfile
 import unittest
+from pathlib import Path
 
 import fixtures
 import build_dm7 as b
@@ -71,6 +76,48 @@ class EqOff(unittest.TestCase):
         s = fixtures.FakeSession()
         b.x32_processing(s, 0, ch, [], "CH 1")
         self.assertEqual(s.values[(IC + "/LPF", "On", (0, 0))], 0)
+
+
+class LayoutChecks(unittest.TestCase):
+    LAY = {"playback_dante_start": 21, "fx_sends": [{"kind": "reverb"}, {"kind": "delay"}]}
+
+    def test_playback_overlapping_stagebox_refused(self):
+        with self.assertRaises(b.Refuse):
+            b.check_layout(dict(self.LAY, playback_dante_start=20), 20, 4)
+
+    def test_playback_right_after_stagebox_ok(self):
+        b.check_layout(self.LAY, 20, 4)
+
+    def test_duplicate_fx_kind_refused(self):
+        with self.assertRaises(b.Refuse):
+            b.check_layout(dict(self.LAY, fx_sends=[{"kind": "reverb"}, {"kind": "reverb"}]), 20, 4)
+
+
+class Unpair(unittest.TestCase):
+    def test_mono_channel_from_a_paired_base_is_unpaired(self):
+        s = fixtures.FakeSession()
+        b.pair(s, 1)
+        b.unpair(s, 1)
+        b.unpair(s, 2)
+        for ch in (0, 1):
+            self.assertEqual(s.values[(IC, "GainGang", (ch,))], 0)
+            self.assertEqual(s.values[(IC, "DelayGang", (ch,))], 0)
+            self.assertEqual(s.values[(IC + "/Signal", "Relation", (ch, 0))], 0)
+
+
+class OutputGuard(unittest.TestCase):
+    def test_output_over_base_refused_and_base_unchanged(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d, "base.dmxf")
+            base.write_bytes(b"not touched")
+            sym, hard = Path(d, "sym.dmxf"), Path(d, "hard.dmxf")
+            sym.symlink_to(base)
+            os.link(base, hard)
+            for out in (base, sym, hard):
+                with contextlib.redirect_stdout(io.StringIO()) as buf:
+                    self.assertEqual(b.main([str(base), "layout.json", str(out)]), 1)
+                self.assertIn("not the base", buf.getvalue())
+            self.assertEqual(base.read_bytes(), b"not touched")
 
 
 if __name__ == "__main__":
