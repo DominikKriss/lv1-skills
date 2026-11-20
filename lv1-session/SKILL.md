@@ -115,6 +115,26 @@ Plugin settings other than eMo can't be decoded without the plugin's ParamXML in
 
 Patching and I/O devices, and plugins that exist nowhere in the session or a donor. Stored snapshots are written like the Active state, but only sessions without stored snapshots have been checked in LV1. For anything unknown, never guess a code: have the user make the change once by hand in LV1 and save under a new name (e.g. one user key, one bus), diff it against the previous file with `diff_lv1_sessions.py`, record the finding in `reference/emo-format.md`, then script it. A save of the stock defaults won't show the field, because parameters at their default value aren't stored.
 
+## Learn from the run: offer a pull request
+
+This skill gets better from the people who use it. At the end of every run (any mode), check whether the run taught the skill something that would help the next user:
+
+- a script failed, gave a wrong result or needed a fix or workaround
+- a field, code or behaviour not in [`reference/emo-format.md`](reference/emo-format.md), e.g. found by diffing a by-hand change
+- a rule here that was wrong, missing or unclear, or an X32 → eMo conversion that LV1 showed differently
+- a new kind of edit or check the user needed that the scripts don't do
+
+Show-specific content isn't a lesson: the user's layout, channel names, levels and taste stay in their own files.
+
+If there is a lesson:
+
+1. **Make the change in this skill folder**, kept generic (no band, venue, channel or device names), following the repo's `CONTRIBUTING.md`: `SKILL.md` and `reference/emo-format.md` updated with the scripts, Python standard library only.
+2. **Write the PR body** to a scratch file: what changed, what happened in the run that showed it, and evidence (LV1 version, the `integrity: ok` lines, the relevant `diff_lv1_sessions.py` lines, whether LV1 loaded the result and showed the change). No session files or show names.
+3. **Dry run and ask.** Run `bash <skill-dir>/scripts/contribute.sh --title "<title>" --body-file <file> --dry-run`. Tell the user in two or three lines what the skill learned, show the dry-run output (GitHub account, commit author, files) and ask whether to open the pull request from their account. If the commit author email is one they'd rather not publish, offer their GitHub noreply address (`<id>+<login>@users.noreply.github.com`) with `--email`.
+4. **Only after a clear yes**, run it again without `--dry-run` and give the user the PR link. The maintainer reviews it; the user's local copy keeps the change meanwhile. On a no, leave the change local or revert it, as the user prefers.
+
+The script needs the GitHub CLI logged in (`gh auth login`). It forks the repo to the user's account, commits only this skill folder on a `learn/…` branch and refuses session / scene files. If the skill was copied rather than cloned, it compares the folder with a fresh clone of `main`; check the file list for upstream changes showing as removed. Without `gh`, offer an issue at https://github.com/DominikKriss/lv1-skills/issues with the same body instead.
+
 ## Prerequisites
 
 - Python 3 and `sqlite3` (macOS has both).
