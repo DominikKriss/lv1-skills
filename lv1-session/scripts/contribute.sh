@@ -50,15 +50,41 @@ else
 fi
 
 cd "$REPO"
+git fetch -q origin refs/heads/main
+UPSTREAM_MAIN="$(git rev-parse FETCH_HEAD)"
+AHEAD="$(git rev-list "$UPSTREAM_MAIN..HEAD")"
+CURRENT="$(git rev-parse --abbrev-ref HEAD)"
 CHANGED="$(git status --porcelain -- "$REL")"
-[ -n "$CHANGED" ] || { echo "no changes in $REL"; exit 1; }
-if git status --porcelain --untracked-files=all -- "$REL" | grep -Eiq '\.(emo|scn|dat)$|__pycache__'; then
+RESUME=0
+if [ -z "$CHANGED" ]; then
+  # A learn/ branch with skill-only commits: an earlier run committed but didn't finish publishing.
+  if [ "${CURRENT#learn/}" != "$CURRENT" ] && [ -n "$AHEAD" ] \
+     && [ -z "$(git diff --name-only "$UPSTREAM_MAIN" HEAD -- . ":(exclude)$REL")" ]; then
+    RESUME=1
+    BRANCH="$CURRENT"
+  else
+    echo "no changes in $REL"
+    exit 1
+  fi
+fi
+if git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n' | grep -Eiq '\.(emo|scn|dat)$|__pycache__'; then
   echo "refusing: session / scene files are among the changes; keep them out of the skill folder" >&2
   exit 4
 fi
+OUTSIDE="$(git diff --cached --name-only -- . ":(exclude)$REL")"
+if [ -n "$OUTSIDE" ]; then
+  echo "refusing: files outside $REL are staged and would be committed too; unstage them first:" >&2
+  echo "$OUTSIDE" >&2
+  exit 4
+fi
+if [ "$RESUME" = 0 ] && [ -n "$AHEAD" ]; then
+  echo "refusing: this branch has commits that aren't on upstream main; they would be published with the PR:" >&2
+  git log --oneline "$UPSTREAM_MAIN..HEAD" >&2
+  exit 4
+fi
 
-AUTHOR_EMAIL="${EMAIL:-$(git config user.email || true)}"
-AUTHOR_NAME="$(git config user.name || echo "$LOGIN")"
+AUTHOR_EMAIL="${EMAIL:-${GIT_AUTHOR_EMAIL:-$(git config user.email || true)}}"
+AUTHOR_NAME="${GIT_AUTHOR_NAME:-$(git config user.name || echo "$LOGIN")}"
 [ -n "$BRANCH" ] || BRANCH="learn/$(echo "$TITLE" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-//; s/-$//' | cut -c1-40)"
 
 if [ "$LOGIN" = "${UPSTREAM%%/*}" ]; then PUSH_TO="origin (maintainer)"; HEAD="$BRANCH"
@@ -68,21 +94,45 @@ echo "GitHub account : $LOGIN"
 echo "commit author  : $AUTHOR_NAME <$AUTHOR_EMAIL>"
 echo "branch         : $BRANCH -> $PUSH_TO"
 echo "pull request   : $UPSTREAM  \"$TITLE\""
-echo "files:"
-git status --porcelain --untracked-files=all -- "$REL" | sed 's/^/  /'
-git --no-pager diff --stat -- "$REL"
+if [ "$RESUME" = 1 ]; then
+  echo "resuming      : $BRANCH is already committed, publishing it"
+  git --no-pager log --format='  %h %an <%ae> %s' "$UPSTREAM_MAIN..HEAD"
+  git --no-pager diff --stat "$UPSTREAM_MAIN" HEAD -- "$REL"
+else
+  echo "files:"
+  git status --porcelain --untracked-files=all -- "$REL" | sed 's/^/  /'
+  git --no-pager diff --stat -- "$REL"
+fi
 if [ "$DRY" = 1 ]; then echo "dry run: nothing committed or pushed"; exit 0; fi
 
-git checkout -q -b "$BRANCH"
-git add -- "$REL"
-git -c user.email="$AUTHOR_EMAIL" -c user.name="$AUTHOR_NAME" commit -q -m "$TITLE"
+if [ "$RESUME" = 0 ]; then
+  git checkout -q -b "$BRANCH"
+  git add -- "$REL"
+  GIT_AUTHOR_NAME="$AUTHOR_NAME" GIT_AUTHOR_EMAIL="$AUTHOR_EMAIL" \
+    GIT_COMMITTER_NAME="$AUTHOR_NAME" GIT_COMMITTER_EMAIL="$AUTHOR_EMAIL" git commit -q -m "$TITLE"
+fi
 
 if [ "$LOGIN" = "${UPSTREAM%%/*}" ]; then
   git push -q -u origin "$BRANCH"
 else
   gh repo fork "$UPSTREAM" --clone=false >/dev/null 2>&1 || true
-  git remote get-url fork >/dev/null 2>&1 || git remote add fork "https://github.com/$LOGIN/${UPSTREAM##*/}.git"
-  for _ in 1 2 3 4 5; do git push -q -u fork "$BRANCH" && break; sleep 3; done
+  FORK_URL="https://github.com/$LOGIN/${UPSTREAM##*/}.git"
+  pushed=0
+  for _ in 1 2 3 4 5; do
+    if git push -q "$FORK_URL" "$BRANCH"; then pushed=1; break; fi
+    sleep 3
+  done
+  [ "$pushed" = 1 ] || { echo "push to $FORK_URL failed; the commit is on local branch $BRANCH" >&2; exit 5; }
 fi
 
-gh pr create --repo "$UPSTREAM" --base main --head "$HEAD" --title "$TITLE" --body-file "$BODY"
+EXISTING="$(gh pr list --repo "$UPSTREAM" --head "$BRANCH" --json url,headRepositoryOwner \
+  -q ".[] | select(.headRepositoryOwner.login == \"$LOGIN\") | .url" 2>/dev/null || true)"
+if [ -n "$EXISTING" ]; then
+  echo "pull request already open: $EXISTING"
+  exit 0
+fi
+PR_URL="$(gh pr create --repo "$UPSTREAM" --base main --head "$HEAD" --title "$TITLE" --body-file "$BODY")" \
+  || { echo "opening the PR failed; run this script again on branch $BRANCH to retry" >&2; exit 5; }
+echo "$PR_URL"
+# CodeRabbit reviews repos under 10 stars only on request.
+gh pr comment "$PR_URL" --body "@coderabbitai review" >/dev/null || echo "note: couldn't request the CodeRabbit review; comment '@coderabbitai review' on the PR"

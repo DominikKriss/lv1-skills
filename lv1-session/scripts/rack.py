@@ -44,13 +44,24 @@ def set_stereo(cur, chainer, snaps):
     """Make an input stereo: chainer width 2, eMo plugins switched to their stereo variant at default."""
     cur.execute("update chainer set num_inputs=2 where obj_id=?", (chainer,))
     for name, (mono, st) in EMO.items():
-        row = cur.execute("select id from plug where chainer_id=? and plugin_name=?", (chainer, name)).fetchone()
-        if not row:
-            continue
-        cur.execute("update plug set plugin_4cc=? where id=?", (st, row[0]))
-        pid = default_preset(cur, st)
-        for s in snaps:
-            cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?", (pid, row[0], s))
+        for (plug,) in cur.execute("select id from plug where chainer_id=? and plugin_name=?",
+                                   (chainer, name)).fetchall():
+            cur.execute("update plug set plugin_4cc=? where id=?", (st, plug))
+            pid = default_preset(cur, st)
+            for s in snaps:
+                cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?", (pid, plug, s))
+
+
+def set_mono(cur, chainer, snaps):
+    """Make a channel mono: width 1, stereo eMo variants switched back to the mono variant at default."""
+    cur.execute("update chainer set num_inputs=1 where obj_id=?", (chainer,))
+    for name, (mono, st) in EMO.items():
+        for (plug,) in cur.execute("select id from plug where chainer_id=? and plugin_name=? and plugin_4cc=?",
+                                   (chainer, name, st)).fetchall():
+            cur.execute("update plug set plugin_4cc=? where id=?", (mono, plug))
+            pid = default_preset(cur, mono)
+            for s in snaps:
+                cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?", (pid, plug, s))
 
 
 class Donor:
@@ -85,15 +96,25 @@ def build_rack(cur, chainer, stereo, slots, donor, donor_cfg, input_name, snaps)
     """
     notes = []
     want = {int(k) - 1: v for k, v in slots.items()}
-    existing = {name: pid for pid, name in cur.execute("select id, plugin_name from plug where chainer_id=?", (chainer,))}
+    twice = sorted({n for n in want.values() if n in EMO and list(want.values()).count(n) > 1})
+    if twice:
+        raise SystemExit(f"{input_name}: {', '.join(twice)} listed in more than one slot; each channel has one")
+    rows = cur.execute("select id, plugin_name from plug where chainer_id=? order by slot", (chainer,)).fetchall()
+    existing = {}
+    for pid, name in rows:
+        if name in EMO and name in want.values() and name not in existing:
+            existing[name] = pid
+    drop = [pid for pid, name in rows if existing.get(name) != pid]
+    for pid in drop:
+        for t in ("hot_plug", "midi_learn"):
+            if cur.execute(f"select count(*) from {t} where plug_id=?", (pid,)).fetchone()[0]:
+                raise SystemExit(f"{input_name}: plugin {pid} is used in {t}; not replacing the rack")
+    for pid in drop:
+        cur.execute("delete from snapshot_plugin where plug_id=?", (pid,))
+        cur.execute("delete from plug_sidechain where plug_id=?", (pid,))
+        cur.execute("delete from plug where id=?", (pid,))
     for name, pid in existing.items():
-        if name not in want.values() or name not in EMO:
-            cur.execute("delete from snapshot_plugin where plug_id=?", (pid,))
-            cur.execute("delete from plug_sidechain where plug_id=?", (pid,))
-            cur.execute("delete from plug where id=?", (pid,))
-    for name, pid in existing.items():
-        if name in EMO and name in want.values():
-            cur.execute("update plug set slot=? where id=?", (-100 - pid, pid))
+        cur.execute("update plug set slot=? where id=?", (-100 - pid, pid))
     width = "stereo" if stereo else "mono"
     for slot, name in sorted(want.items()):
         if name in EMO:

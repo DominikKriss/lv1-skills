@@ -94,11 +94,11 @@ def copy_bus(s, e):
         if kind == "mon":
             s.cur.execute("update chainer set is_input_nx=? where obj_id=?", (nx, dst))
         if kind == "matrix":
-            for name, value in s.cur.execute(
-                    "select cp.name, v.param_value from snapshot_chainer_params v join chainer_params cp"
-                    " on cp.id=v.param_id where v.chainer_id=? and v.snapshot_id=-1"
-                    " and cp.name like 'PARAM_INPUT_MATRIX_%'", (src,)).fetchall():
-                s.set_param(dst, name, value)
+            matrix_params = "(select id from chainer_params where name like 'PARAM_INPUT_MATRIX_%')"
+            s.cur.execute(f"delete from snapshot_chainer_params where chainer_id=? and param_id in {matrix_params}",
+                          (dst,))
+            s.cur.execute("insert into snapshot_chainer_params select ?, snapshot_id, param_id, param_value from"
+                          f" snapshot_chainer_params where chainer_id=? and param_id in {matrix_params}", (dst, src))
             asgn = s.cur.execute("select src_asgn_type from snapshot_assignment where dst_id=? and dst_section_index=0"
                                  " and snapshot_id=-1", (src,)).fetchone()
             if asgn:
@@ -113,6 +113,8 @@ def copy_bus(s, e):
             (f"PARAM_AUX_SEND_ROTATE_NX_{sfx}", f"PARAM_AUX_SEND_WIDTH_NX_{sfx}")).fetchall()
         for n in e["to"]:
             dsfx = send_suffix("mon", n - 1)
+            s.cur.execute("delete from snapshot_chainer_params where param_id in (?, ?)",
+                          (s.pid[f"PARAM_AUX_SEND_ROTATE_NX_{dsfx}"], s.pid[f"PARAM_AUX_SEND_WIDTH_NX_{dsfx}"]))
             for ch, snap, name, value in rows:
                 s.cur.execute("insert or replace into snapshot_chainer_params values (?,?,?,?)",
                               (ch, snap, s.pid[name[: -len(sfx)] + dsfx], value))
@@ -122,12 +124,16 @@ def copy_bus(s, e):
 def add_plugin(s, e):
     f = e["from"]
     src = s.oid(f["type"], f["index"])
-    row = s.cur.execute("select id, plugin_name from plug where chainer_id=? and slot=?", (src, f["slot"] - 1)).fetchone()
+    row = s.cur.execute("select id, plugin_name, plugin_4cc from plug where chainer_id=? and slot=?",
+                        (src, f["slot"] - 1)).fetchone()
     if not row:
         sys.exit(f"{s.name(src)} has no plugin in slot {f['slot']}")
     to = e["to"]
     for n in to["index"]:
         dst = s.oid(to["type"], n)
+        width = s.cur.execute("select num_inputs from chainer where obj_id=?", (dst,)).fetchone()[0]
+        if row[2][-1:] in ("M", "S") and (row[2][-1] == "S") != (width == 2):
+            sys.exit(f"{row[1]} ({row[2]}) doesn't fit {s.name(dst)}: it is {'stereo' if width == 2 else 'mono'}")
         if s.cur.execute("select count(*) from plug where chainer_id=? and slot=?", (dst, e["slot"] - 1)).fetchone()[0]:
             sys.exit(f"{s.name(dst)} slot {e['slot']} is not free")
         s.copy_plug(row[0], dst, slot=e["slot"] - 1, reset_window=True)
