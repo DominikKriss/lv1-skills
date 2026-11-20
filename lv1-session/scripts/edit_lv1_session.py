@@ -94,13 +94,11 @@ def copy_bus(s, e):
         if kind == "mon":
             s.cur.execute("update chainer set is_input_nx=? where obj_id=?", (nx, dst))
         if kind == "matrix":
-            s.cur.execute("delete from snapshot_chainer_params where chainer_id=? and param_id in"
-                          " (select id from chainer_params where name like 'PARAM_INPUT_MATRIX_%')", (dst,))
-            for name, value in s.cur.execute(
-                    "select cp.name, v.param_value from snapshot_chainer_params v join chainer_params cp"
-                    " on cp.id=v.param_id where v.chainer_id=? and v.snapshot_id=-1"
-                    " and cp.name like 'PARAM_INPUT_MATRIX_%'", (src,)).fetchall():
-                s.set_param(dst, name, value)
+            matrix_params = "(select id from chainer_params where name like 'PARAM_INPUT_MATRIX_%')"
+            s.cur.execute(f"delete from snapshot_chainer_params where chainer_id=? and param_id in {matrix_params}",
+                          (dst,))
+            s.cur.execute("insert into snapshot_chainer_params select ?, snapshot_id, param_id, param_value from"
+                          f" snapshot_chainer_params where chainer_id=? and param_id in {matrix_params}", (dst, src))
             asgn = s.cur.execute("select src_asgn_type from snapshot_assignment where dst_id=? and dst_section_index=0"
                                  " and snapshot_id=-1", (src,)).fetchone()
             if asgn:

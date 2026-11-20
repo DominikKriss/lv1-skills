@@ -240,8 +240,11 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps, fixed_rack=False):
                 cur.execute("update plug set slot=-1 where id=?", (d5,))
                 cur.execute("update plug set slot=? where id=?", (slots["EMO-D5"], q4))
                 cur.execute("update plug set slot=? where id=?", (slots["EMO-Q4"], d5))
-        if s["trim"] > TRIM_MAX:
+        if s["trim"] > TRIM_MAX and "EMO-Q4" in plugs:
             notes.append(f"trim {s['trim']:+.1f} dB -> {TRIM_MAX:+.0f} trim + {s['trim'] - TRIM_MAX:+.1f} Q4 out")
+        elif s["trim"] > TRIM_MAX:
+            notes.append(f"trim {s['trim']:+.1f} dB -> {TRIM_MAX:+.0f} trim, {s['trim'] - TRIM_MAX:+.1f} dB missing"
+                         " (no EMO-Q4 to make it up)")
         if s["eq_dropped"]:
             notes.append("EQ band dropped: " + ", ".join(f"{k} {f:.0f} Hz" for k, f, _g, _q in s["eq_dropped"]))
         if s["comp"] and s["comp"]["ratio"] > 20:

@@ -101,12 +101,13 @@ def main(path):
                   or float(trim) != 0 or inv == "ON")
         if SKIP_FLAT and not active:
             continue
-        block = routing_in[(n - 1) // 8]
+        source = int(c["config"][-1])
+        block = routing_in[(source - 1) // 8] if 1 <= source <= 32 else f"source {source}"
         out.append(f"## Ch {n} {name[n]}  (X32 source {block})")
         inp = [f"trim {trim} dB"]
         local = re.match(r"AN(\d+)-", block)
         if local:
-            h = head.get(int(local.group(1)) - 1 + (n - 1) % 8, ["+0.0", "OFF"])
+            h = head.get(int(local.group(1)) - 1 + (source - 1) % 8, ["+0.0", "OFF"])
             inp.append(f"preamp gain {h[0]} dB, phantom {h[1]}")
         if inv == "ON":
             inp.append("**polarity invert ON**")

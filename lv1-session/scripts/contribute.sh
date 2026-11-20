@@ -62,10 +62,12 @@ if [ -n "$OUTSIDE" ]; then
   echo "$OUTSIDE" >&2
   exit 4
 fi
-git fetch -q origin main
-if [ -n "$(git rev-list origin/main..HEAD)" ]; then
+git fetch -q origin refs/heads/main
+UPSTREAM_MAIN="$(git rev-parse FETCH_HEAD)"
+AHEAD="$(git rev-list "$UPSTREAM_MAIN..HEAD")"
+if [ -n "$AHEAD" ]; then
   echo "refusing: this branch has commits that aren't on upstream main; they would be published with the PR:" >&2
-  git log --oneline origin/main..HEAD >&2
+  git log --oneline "$UPSTREAM_MAIN..HEAD" >&2
   exit 4
 fi
 

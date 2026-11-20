@@ -241,15 +241,16 @@ class Session:
 X32_ROUTING = "/config/routing/IN AN1-8 AN9-16 AN17-24 AN25-32 AUX/CR"
 
 
-def x32_channel(n, name="CH", trim="+0.0", inv="OFF", hp=("OFF", "80"), eq_on="OFF", eq=None, gate=None,
-                dyn=None, dyn_pos="PRE", gate_filter=("OFF", "3.0", "1k00"), dyn_filter=("OFF", "3.0", "1k00")):
+def x32_channel(n, name="CH", source=None, trim="+0.0", inv="OFF", hp=("OFF", "80"), eq_on="OFF", eq=None,
+                gate=None, dyn=None, dyn_pos="PRE", gate_filter=("OFF", "3.0", "1k00"), dyn_filter=("OFF", "3.0", "1k00")):
     """Lines of one /ch/NN block. eq: up to 4 (type, freq, gain, q); gate / dyn: dicts of overrides."""
     c = f"/ch/{n:02d}"
     bands = list(eq or []) + [("PEQ", "1k00", "+0.00", "2.0")] * (4 - len(eq or []))
     g = {"on": "OFF", "thr": "-40.0", "range": "60.0", "att": "0", "hold": "50", "rel": "200"} | (gate or {})
     d = {"on": "OFF", "thr": "-20.0", "ratio": "4.0", "knee": "1", "makeup": "0.0", "att": "10", "rel": "100",
          "mix": "100"} | (dyn or {})
-    lines = [f'{c}/config "{name}" 1 RD {n}', f"{c}/preamp {trim} {inv} {hp[0]} 24 {hp[1]}",
+    lines = [f'{c}/config "{name}" 1 RD {n if source is None else source}',
+             f"{c}/preamp {trim} {inv} {hp[0]} 24 {hp[1]}",
              f"{c}/gate {g['on']} GATE {g['thr']} {g['range']} {g['att']} {g['hold']} {g['rel']} 0",
              f"{c}/gate/filter {' '.join(gate_filter)}",
              f"{c}/dyn {d['on']} COMP PEAK LIN {d['thr']} {d['ratio']} {d['knee']} {d['makeup']} {d['att']} 0.02"

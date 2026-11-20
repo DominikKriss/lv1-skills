@@ -70,6 +70,12 @@ class Report(unittest.TestCase):
         self.assertIn("preamp gain +30.0 dB, phantom ON", out)
         self.assertIn("preamp gain +12.5 dB, phantom OFF", out)
 
+    def test_preamp_follows_the_channel_source_not_the_channel_number(self):
+        scene = fixtures.write_scene(self.dir / "s.scn", {1: {"name": "HI HAT", "source": 10, "trim": "+3.0"}},
+                                     headamps={0: ("+30.0", "ON"), 9: ("+12.5", "OFF")})
+        out = run(scene)
+        self.assertIn("(X32 source AN9-16)", out)
+        self.assertIn("preamp gain +12.5 dB, phantom OFF", out)
 
 if __name__ == "__main__":
     unittest.main()

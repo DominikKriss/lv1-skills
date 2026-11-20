@@ -101,5 +101,15 @@ class BuildRack(Base):
             self.build({"1": "EMO-D5", "3": "EMO-D5"})
 
 
+class SecondD5(Base):
+    def test_every_d5_instance_changes_width(self):
+        fixtures.add_plug(self.cur, self.chainer, 5, "EMO-D5", "CDYM", fixtures.chunk("EMO-D5", "CDYM"), [-1, 0],
+                          role=1)
+        rack.set_stereo(self.cur, self.chainer, [-1, 0])
+        self.assertEqual([cc for _s, n, cc in self.rack() if n == "EMO-D5"], ["CDYS", "CDYS"])
+        rack.set_mono(self.cur, self.chainer, [-1, 0])
+        self.assertEqual([cc for _s, n, cc in self.rack() if n == "EMO-D5"], ["CDYM", "CDYM"])
+        self.assertTrue(fixtures.ref_counts_ok(self.path))
+
 if __name__ == "__main__":
     unittest.main()

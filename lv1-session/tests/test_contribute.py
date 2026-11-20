@@ -133,6 +133,17 @@ class Contribute(unittest.TestCase):
         self.assertNotIn("learn/fix-a-thing", git(bob, "branch", "--list"))
         self.assertIn("--head alice:learn/fix-a-thing", self.log.read_text())
 
+    def test_unpushed_commit_in_a_single_branch_clone_is_refused(self):
+        git(self.upstream, "branch", "dev", "main")
+        single = Path(self.tmp.name) / "single"
+        git(self.tmp.name, "clone", "-q", "--single-branch", "--branch", "dev",
+            "https://github.com/DominikKriss/lv1-skills.git", str(single))
+        (single / "README.md").write_text("local\n")
+        git(single, "commit", "-qam", "local")
+        (single / "lv1-session" / "SKILL.md").write_text("skill v2\n")
+        r = subprocess.run(["bash", str(single / "lv1-session" / "scripts" / "contribute.sh"), "--title", "t",
+                            "--body-file", str(self.body), "--dry-run"], env=self.env, capture_output=True, text=True)
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
 
 if __name__ == "__main__":
     unittest.main()

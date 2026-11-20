@@ -44,27 +44,24 @@ def set_stereo(cur, chainer, snaps):
     """Make an input stereo: chainer width 2, eMo plugins switched to their stereo variant at default."""
     cur.execute("update chainer set num_inputs=2 where obj_id=?", (chainer,))
     for name, (mono, st) in EMO.items():
-        row = cur.execute("select id from plug where chainer_id=? and plugin_name=?", (chainer, name)).fetchone()
-        if not row:
-            continue
-        cur.execute("update plug set plugin_4cc=? where id=?", (st, row[0]))
-        pid = default_preset(cur, st)
-        for s in snaps:
-            cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?", (pid, row[0], s))
+        for (plug,) in cur.execute("select id from plug where chainer_id=? and plugin_name=?",
+                                   (chainer, name)).fetchall():
+            cur.execute("update plug set plugin_4cc=? where id=?", (st, plug))
+            pid = default_preset(cur, st)
+            for s in snaps:
+                cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?", (pid, plug, s))
 
 
 def set_mono(cur, chainer, snaps):
     """Make a channel mono: width 1, stereo eMo variants switched back to the mono variant at default."""
     cur.execute("update chainer set num_inputs=1 where obj_id=?", (chainer,))
     for name, (mono, st) in EMO.items():
-        row = cur.execute("select id from plug where chainer_id=? and plugin_name=? and plugin_4cc=?",
-                          (chainer, name, st)).fetchone()
-        if not row:
-            continue
-        cur.execute("update plug set plugin_4cc=? where id=?", (mono, row[0]))
-        pid = default_preset(cur, mono)
-        for s in snaps:
-            cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?", (pid, row[0], s))
+        for (plug,) in cur.execute("select id from plug where chainer_id=? and plugin_name=? and plugin_4cc=?",
+                                   (chainer, name, st)).fetchall():
+            cur.execute("update plug set plugin_4cc=? where id=?", (mono, plug))
+            pid = default_preset(cur, mono)
+            for s in snaps:
+                cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?", (pid, plug, s))
 
 
 class Donor:

@@ -148,6 +148,17 @@ class Apply(unittest.TestCase):
         self.assertEqual(s.preset_values(T_INPUT, 0, "EMO-D5")["PARAM_GATE_ON"], "1")
         s.close()
 
+    def test_trim_above_ten_without_q4_reports_the_missing_gain(self):
+        db = sqlite3.connect(self.path)
+        q4 = db.execute("select id from plug where plugin_name='EMO-Q4' and chainer_id="
+                        "(select id from object where obj_type=0 and obj_index=0)").fetchone()[0]
+        db.execute("delete from snapshot_plugin where plug_id=?", (q4,))
+        db.execute("delete from plug where id=?", (q4,))
+        db.commit()
+        db.close()
+        report = self.apply(trim="+18.0")
+        self.assertIn("+8.0 dB missing", report[0])
+        self.assertNotIn("Q4 out", report[0])
 
 if __name__ == "__main__":
     unittest.main()

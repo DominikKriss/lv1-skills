@@ -108,6 +108,13 @@ class Edit(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.edit({"user_keys": [{"key": 13, "talkback": "TB BAND"}]})
 
+    def test_copy_matrix_levels_per_snapshot(self):
+        self.src_s.set_param(T_MATRIX, 0, "PARAM_INPUT_MATRIX_GAIN_0", -144.0, snaps=(-1,))
+        self.src_s.set_param(T_MATRIX, 0, "PARAM_INPUT_MATRIX_GAIN_0", 0.0, snaps=(0,))
+        self.src_s.set_param(T_MATRIX, 1, "PARAM_INPUT_MATRIX_GAIN_0", -6.0, snaps=(-1, 0))
+        self.edit({"copy_bus": [{"type": "matrix", "from": 1, "to": [2]}]})
+        self.assertEqual(self.s.param(T_MATRIX, 1, "PARAM_INPUT_MATRIX_GAIN_0", -1), -144.0)
+        self.assertEqual(self.s.param(T_MATRIX, 1, "PARAM_INPUT_MATRIX_GAIN_0", 0), 0.0)
 
 if __name__ == "__main__":
     unittest.main()
