@@ -39,6 +39,12 @@ Every skill's `SKILL.md` ends with "Learn from the run": after a run that found 
 offers the user a pull request through `<skill>/scripts/contribute.sh` (identical in every skill; CI compares
 the copies) or an issue. Change the script in `lv1-session/scripts/` and copy it to the other skills.
 
+## Adding a console
+
+A new console is a new skill folder, built the way [CONTRIBUTING.md](CONTRIBUTING.md#adding-a-console) describes.
+When a user asks for a console that has no skill yet, offer to start one (an editor save as the base, names and
+patch first) and to open a pull request for it.
+
 ## Vendored code
 
 `dm7-session/vendor/yamaha_tool.py` is from show-file-skills (MIT), kept unchanged with

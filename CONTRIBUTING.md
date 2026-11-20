@@ -22,6 +22,18 @@ Most of this skill comes from comparing two saved sessions that differ by one ch
 2. Run `python3 lv1-session/scripts/diff_lv1_sessions.py before.emo after.emo`.
 3. Open an issue or a pull request with the diff output, what you changed in LV1, and your LV1 version.
 
+## Adding a console
+
+New consoles are the contribution we'd love most. You don't need to cover everything: a skill that writes names, colours and patch from an input list, loads cleanly in the console's editor and is honest about what it doesn't do is a great first pull request. The rest can follow, one proven field at a time.
+
+1. **Open a [new console request](https://github.com/DominikKriss/mixing-console-skills/issues/new?template=new_console.yml)** with the console, its editor and firmware, and what you plan to write first, so nobody duplicates work.
+2. **Start from an editor save.** Make an empty show in the console's offline editor and decode it: save, change one thing, save again, diff. Write each finding in `reference/` with how it was proven.
+3. **Copy the shape of an existing skill:** `wing-snapshot/` (JSON format) or `dm7-session/` (binary format with a vendored reader) is a good template. One folder, `SKILL.md`, README, `scripts/`, `examples/` (synthetic), `reference/`, `tests/`, and a copy of `lv1-session/scripts/contribute.sh` (CI checks the copies match). Rules for agents and people alike are in [AGENTS.md](AGENTS.md).
+4. **Reuse what exists.** The X32 scene reader (`wing-snapshot/scripts/x32_to_wing.py`, `dm7-session/scripts/x32_scn.py`) can be copied to convert X32 processing to your desk. Existing open-source decoders are welcome as vendored code if their licence allows it (MIT, BSD, GPL-compatible), kept unchanged with their licence file; [show-file-skills](https://github.com/michaelkeithlewis/show-file-skills) has format notes for many desks.
+5. **Prove it in the editor:** in the PR, say which editor version loaded the generated file and what it showed. Add a row to the README skills table.
+
+Questions while you work? Open a draft pull request early; the maintainer is happy to help.
+
 ## Pull requests
 
 The easiest way: after a run that taught a skill something, Claude Code offers to open the pull request for you (`<skill>/scripts/contribute.sh`, the same script in every skill, which needs the GitHub CLI logged in). It forks the repo to your account and commits only the skill folder; check the dry-run output for the commit email you want to publish.
