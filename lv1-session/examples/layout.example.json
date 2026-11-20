@@ -1,0 +1,18 @@
+{
+ "inputs": ["KICK", "SNR", "OH L", "OH R", "BASS", "GTR", "VOX 1", "VOX 2", "TB"],
+ "x32_to_lv1": {"1": 1, "2": 2, "7": 3, "8": 4, "10": 5, "11": 6, "17": 7, "18": 8},
+ "levels": {"other_db": -10.0, "own_db": 0.0},
+ "always_pre_0db": ["TB"],
+ "mons": [
+  {"name": "SINGER 1", "stereo": true, "matrix": 1, "own": ["VOX 1"]},
+  {"name": "SINGER 2", "stereo": true, "matrix": 2, "own": ["VOX 2", "GTR"]},
+  {"name": "BASS", "stereo": true, "matrix": 3, "own": ["BASS"]},
+  {"name": "WDG 1", "sends": false}
+ ],
+ "fx": [
+  {"name": "REV V1", "dedicated_to": "SINGER 1", "feeds": {"VOX 1": [0.0, "PRE"]}},
+  {"name": "REV DRUM", "feeds": {"KICK": [-10.0, "PSP"], "SNR": [-10.0, "PSP"], "OH L": [-10.0, "PSP"], "OH R": [-10.0, "PSP"]}},
+  {"name": "DLY"}
+ ],
+ "fx_returns": {"general_db": -10.0, "own_db": -6.0, "other_db": -15.0}
+}

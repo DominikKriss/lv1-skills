@@ -1,0 +1,24 @@
+{
+ "names": {"mon": {"16": "TB FOH"}},
+ "copy_bus": [
+  {"type": "mon", "from": 1, "to": [2, 3], "nx_positions": true},
+  {"type": "matrix", "from": 1, "to": [2, 3]}
+ ],
+ "add_plugin": [
+  {"from": {"type": "cue", "index": 1, "slot": 4}, "to": {"type": "matrix", "index": [1, 2, 3]}, "slot": 7}
+ ],
+ "matrix_gain": {"matrices": [1, 2, 3], "db": 0.0},
+ "talkback": {
+  "presets": [
+   {"name": "TB FOH", "mons": [16]},
+   {"name": "TB BAND", "mons": [1, 2, 3]},
+   {"name": "TB ALL", "mons": [1, 2, 3, 16]}
+  ],
+  "master_db": 0.0,
+  "send_db": 0.0
+ },
+ "user_keys": [
+  {"key": 1, "sof_mon": 1}, {"key": 2, "sof_mon": 2}, {"key": 3, "sof_mon": 3},
+  {"key": 13, "talkback": "TB FOH"}, {"key": 14, "talkback": "TB BAND"}, {"key": 15, "talkback": "TB ALL"}
+ ]
+}
