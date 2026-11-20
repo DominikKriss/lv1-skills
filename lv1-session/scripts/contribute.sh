@@ -85,4 +85,7 @@ else
   for _ in 1 2 3 4 5; do git push -q -u fork "$BRANCH" && break; sleep 3; done
 fi
 
-gh pr create --repo "$UPSTREAM" --base main --head "$HEAD" --title "$TITLE" --body-file "$BODY"
+PR_URL="$(gh pr create --repo "$UPSTREAM" --base main --head "$HEAD" --title "$TITLE" --body-file "$BODY")"
+echo "$PR_URL"
+# CodeRabbit reviews repos under 10 stars only on request.
+gh pr comment "$PR_URL" --body "@coderabbitai review" >/dev/null || echo "note: couldn't request the CodeRabbit review; comment '@coderabbitai review' on the PR"
