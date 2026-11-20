@@ -92,8 +92,10 @@ def apply(snap, strip, ch, notes):
             snap.set(f"{e}.{side}g", gn)
             snap.set(f"{e}.{side}q", q)
         elif typ in ("LCut", "HCut"):
+            if ch["eq"][0] != "ON":
+                continue
             side = "lc" if typ == "LCut" else "hc"
-            snap.set(f"{strip}.flt.{side}", ch["eq"][0] == "ON")
+            snap.set(f"{strip}.flt.{side}", True)
             snap.set(f"{strip}.flt.{side}f", fr)
             snap.set(f"{strip}.flt.{side}s", "12")
         else:

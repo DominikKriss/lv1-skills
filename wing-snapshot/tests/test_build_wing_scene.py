@@ -135,6 +135,16 @@ class X32EqOff(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertFalse(snap["ae_data"]["ch"]["1"]["flt"]["hc"])
 
+    def test_preamp_low_cut_kept_when_eq_off_has_lcut(self):
+        lay = json.loads((EXAMPLES / "layout-auto.example.json").read_text())
+        lay["processing"] = {"x32_scene": "scene.scn", "from_x32": {"ch.1": 1},
+                             "lowcut_rest": {"freq": 120, "slope": "24", "eq_token": "CUT", "skip": []}}
+        scene = fixtures.SCENE.replace("/ch/01/eq ON", "/ch/01/eq OFF").replace("HCut 8k00", "LCut 300.0")
+        code, out, snap = run(lay, scene)
+        self.assertEqual(code, 0, out)
+        flt = snap["ae_data"]["ch"]["1"]["flt"]
+        self.assertEqual((flt["lc"], flt["lcf"], flt["lcs"]), (True, 40, "24"))
+
 
 if __name__ == "__main__":
     unittest.main()
