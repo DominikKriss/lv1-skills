@@ -22,6 +22,8 @@ Most of this skill comes from comparing two saved sessions that differ by one ch
 
 ## Pull requests
 
+The easiest way: after a run that taught a skill something, Claude Code offers to open the pull request for you (`lv1-session/scripts/contribute.sh`, which needs the GitHub CLI logged in). It forks the repo to your account and commits only the skill folder; check the dry-run output for the commit email you want to publish.
+
 - One topic per pull request. Update the skill's `SKILL.md` and format reference along with the scripts. A new skill goes in its own folder with a `SKILL.md`, a README and a row in the repository README.
 - Python 3 standard library only.
 - Test on a copy of a real session and include in the PR:

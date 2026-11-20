@@ -33,6 +33,8 @@ Unofficial; not affiliated with or supported by Waves or Behringer. The `.emo` f
 
 Issues and pull requests welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Format findings (one change made in LV1, diffed between two saves) are the most useful contribution.
 
+The skills learn from use: when a run turns up something the skill should know (a fix, a format finding, a missing rule), Claude Code offers to open a pull request with it from your GitHub account. It shows the account, commit email and files first and only opens the PR if you say yes.
+
 ## License
 
 [GPL-3.0](LICENSE). Waves, eMotion LV1 and SoundGrid are trademarks of Waves Audio Ltd.; Behringer and X32 are trademarks of Music Tribe. They are named only to describe compatibility.
