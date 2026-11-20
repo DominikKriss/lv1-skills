@@ -33,6 +33,12 @@ from another skill's folder; shared helpers are copied (for example the X32 scen
 - No narrative code comments; keep only short non-obvious whys. Design reasoning goes in the PR.
 - `main` is protected: changes go through a pull request the maintainer reviews and merges.
 
+## Contributions
+
+Every skill's `SKILL.md` ends with "Learn from the run": after a run that found a bug or a format fact, the agent
+offers the user a pull request through `<skill>/scripts/contribute.sh` (identical in every skill; CI compares
+the copies) or an issue. Change the script in `lv1-session/scripts/` and copy it to the other skills.
+
 ## Vendored code
 
 `dm7-session/vendor/yamaha_tool.py` is from show-file-skills (MIT), kept unchanged with

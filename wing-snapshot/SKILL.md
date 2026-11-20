@@ -50,3 +50,23 @@ envelope), key filters (bandpass Q to `BP`, LC / HC to `HP` / `LP`), comp pre / 
 not converted: the gain sits on the stagebox.
 
 Format notes and what is unconfirmed: `reference/wing-format.md`.
+
+## Learn from the run: offer a pull request
+
+This skill gets better from the people who use it. At the end of every run, check whether the run taught the skill something that would help the next user:
+
+- the builder failed, was refused where it shouldn't be, or gave a wrong result
+- the editor showed a value differently from what was written, dropped it, or refused the file
+- a field, code or behaviour not in [`reference/wing-format.md`](reference/wing-format.md), or an item there proven or disproven by an editor load
+- a layout feature or X32 conversion the user needed that the builder doesn't do
+
+Show-specific content isn't a lesson: the user's layout, channel names and levels stay in their own files.
+
+If there is a lesson:
+
+1. **Make the change in this skill folder**, kept generic (no band, venue, channel or device names), following the repo's `AGENTS.md` and `CONTRIBUTING.md`: `SKILL.md` and `reference/wing-format.md` updated with the scripts, tests added, Python standard library only.
+2. **Write the PR body** to a scratch file: what changed, what happened in the run that showed it, and evidence (WING-Edit version, the builder's change count and notes, what WING-Edit showed after loading the result (and after saving it, if a value moved)). No show files or show names.
+3. **Dry run and ask.** Run `bash <skill-dir>/scripts/contribute.sh --title "<title>" --body-file <file> --dry-run`, show the user the output (GitHub account, commit author, files) and ask whether to open the pull request from their account. Offer their GitHub noreply address with `--email` if they'd rather not publish their email.
+4. **Only after a clear yes**, run it without `--dry-run` and give the user the PR link.
+
+If the user found a bug but no fix, or has no GitHub CLI, offer an issue at https://github.com/DominikKriss/mixing-console-skills/issues/new/choose with the same body instead. The script is the same in every skill (see `lv1-session/SKILL.md` for its details).

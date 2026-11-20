@@ -67,7 +67,7 @@ if [ -z "$CHANGED" ]; then
     exit 1
   fi
 fi
-if git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n' | grep -Eiq '\.(emo|scn|dat)$|__pycache__'; then
+if git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n' | grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$|__pycache__'; then
   echo "refusing: session / scene files are among the changes; keep them out of the skill folder" >&2
   exit 4
 fi

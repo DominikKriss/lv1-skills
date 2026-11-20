@@ -1,0 +1,24 @@
+name: Format finding or editor test
+description: A field you decoded, or a result from loading generated output in the editor
+labels: [format]
+body:
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Skill
+      options: [lv1-session, wing-snapshot, dm7-session]
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Editor / firmware version
+    validations:
+      required: true
+  - type: textarea
+    id: finding
+    attributes:
+      label: What you changed or loaded, and what you saw
+      description: One change per save, then the diff (LV1 diff_lv1_sessions.py, or the changed keys / fields), or what the editor showed after loading a generated file
+    validations:
+      required: true

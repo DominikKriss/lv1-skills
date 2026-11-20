@@ -33,7 +33,7 @@ Unofficial; not affiliated with or supported by Waves, Behringer or Yamaha. The 
 
 ## Contributing
 
-Issues and pull requests welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Format findings (one change made in LV1, diffed between two saves) are the most useful contribution.
+**Found a bug or a value the editor showed differently? Please report it**: [open an issue](https://github.com/DominikKriss/mixing-console-skills/issues/new/choose) or a pull request, for any skill. See [CONTRIBUTING.md](CONTRIBUTING.md); agents read [AGENTS.md](AGENTS.md). Editor load results and format findings (one change made in the editor, diffed between two saves) are the most useful contributions.
 
 The skills learn from use: when a run turns up something the skill should know (a fix, a format finding, a missing rule), Claude Code offers to open a pull request with it from your GitHub account. It shows the account, commit email and files first and only opens the PR if you say yes.
 
