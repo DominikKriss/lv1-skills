@@ -26,6 +26,7 @@ The easiest way: after a run that taught a skill something, Claude Code offers t
 
 - One topic per pull request. Update the skill's `SKILL.md` and format reference along with the scripts. A new skill goes in its own folder with a `SKILL.md`, a README and a row in the repository README.
 - Python 3 standard library only.
+- Add or update the tests in the skill's `tests/` folder (`python3 -m unittest discover -s tests -t tests` from the skill folder). Tests use synthetic sessions from `tests/fixtures.py`, never a real `.emo`. GitHub Actions runs them on every pull request.
 - Test on a copy of a real session and include in the PR:
   - the script output, ending with `integrity: ok` and `presets with wrong ref_count: 0`
   - the `diff_lv1_sessions.py` output before → after
