@@ -130,6 +130,8 @@ def q4_values(s):
     for b in range(2, 5):
         names[b] = tuple(f"PARAM_BAND{b}_{x}_L" for x in ("STATE", "TYPE", "GAIN", "FREQ", "Q"))
     rnames = {b: tuple(f"PARAM_BAND{b}_{x}_R" for x in ("STATE", "TYPE", "GAIN", "FREQ", "Q")) for b in range(1, 5)}
+    for b in range(1, 5):
+        v[names[b][0]] = v[rnames[b][0]] = 0
     for slot, (kind, f, g, q) in s["eq"].items():
         code = LOW_TYPE.get(kind) if slot in (1, 2) else HIGH_TYPE.get(kind)
         vals = [1, code, 0 if kind in ("HighPass", "LowPass") else clamp(g, -18, 18), clamp(f, 15.625, 21357.44)]
@@ -140,8 +142,7 @@ def q4_values(s):
             if qv is not None:
                 v[nm[4]] = qv
     extra = s["trim"] - TRIM_MAX if s["trim"] > TRIM_MAX else 0.0
-    if extra:
-        v["PARAM_OUT_GAIN_L"] = v["PARAM_OUT_GAIN_R"] = clamp(extra, -12, 12)
+    v["PARAM_OUT_GAIN_L"] = v["PARAM_OUT_GAIN_R"] = clamp(extra, -12, 12)
     return v
 
 
@@ -205,7 +206,10 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps, fixed_rack=False):
         chainer = obj_ids[lv1i]
         vals = {"EMO-F2": f2_values(s), "EMO-D5": d5_values(s), "EMO-Q4": q4_values(s)}
         plugs = dict(cur.execute("select plugin_name, id from plug where chainer_id=?", (chainer,)))
+        notes = [f"{p} not in the rack, its settings skipped" for p in vals if p not in plugs]
         for pname, v in vals.items():
+            if pname not in plugs:
+                continue
             template = cur.execute(
                 "select pp.preset from snapshot_plugin sp join plugin_preset pp on pp.id=sp.preset_id"
                 " where sp.plug_id=? and sp.snapshot_id=?", (plugs[pname], snaps[0])).fetchone()[0]
@@ -229,13 +233,13 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps, fixed_rack=False):
                         [(f"PARAM_INPUT_DIGITAL_TRIM{sfx}", trim) for sfx in ("", "_L", "_R")]:
                 cur.execute("insert or replace into snapshot_chainer_params values (?,?,?,?)",
                             (chainer, snap, pid[n], float(x)))
-        if s["comp_post_eq"] and not fixed_rack:
+        if not fixed_rack and "EMO-D5" in plugs and "EMO-Q4" in plugs:
             slots = dict(cur.execute("select plugin_name, slot from plug where chainer_id=?", (chainer,)))
-            d5, q4 = plugs["EMO-D5"], plugs["EMO-Q4"]
-            cur.execute("update plug set slot=-1 where id=?", (d5,))
-            cur.execute("update plug set slot=? where id=?", (slots["EMO-D5"], q4))
-            cur.execute("update plug set slot=? where id=?", (slots["EMO-Q4"], d5))
-        notes = []
+            if (slots["EMO-Q4"] < slots["EMO-D5"]) != s["comp_post_eq"]:
+                d5, q4 = plugs["EMO-D5"], plugs["EMO-Q4"]
+                cur.execute("update plug set slot=-1 where id=?", (d5,))
+                cur.execute("update plug set slot=? where id=?", (slots["EMO-D5"], q4))
+                cur.execute("update plug set slot=? where id=?", (slots["EMO-Q4"], d5))
         if s["trim"] > TRIM_MAX:
             notes.append(f"trim {s['trim']:+.1f} dB -> {TRIM_MAX:+.0f} trim + {s['trim'] - TRIM_MAX:+.1f} Q4 out")
         if s["eq_dropped"]:

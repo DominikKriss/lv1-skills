@@ -52,8 +52,20 @@ fi
 cd "$REPO"
 CHANGED="$(git status --porcelain -- "$REL")"
 [ -n "$CHANGED" ] || { echo "no changes in $REL"; exit 1; }
-if git status --porcelain --untracked-files=all -- "$REL" | grep -Eiq '\.(emo|scn|dat)$|__pycache__'; then
+if git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n' | grep -Eiq '\.(emo|scn|dat)$|__pycache__'; then
   echo "refusing: session / scene files are among the changes; keep them out of the skill folder" >&2
+  exit 4
+fi
+OUTSIDE="$(git diff --cached --name-only -- . ":(exclude)$REL")"
+if [ -n "$OUTSIDE" ]; then
+  echo "refusing: files outside $REL are staged and would be committed too; unstage them first:" >&2
+  echo "$OUTSIDE" >&2
+  exit 4
+fi
+git fetch -q origin main
+if [ -n "$(git rev-list origin/main..HEAD)" ]; then
+  echo "refusing: this branch has commits that aren't on upstream main; they would be published with the PR:" >&2
+  git log --oneline origin/main..HEAD >&2
   exit 4
 fi
 
@@ -81,8 +93,13 @@ if [ "$LOGIN" = "${UPSTREAM%%/*}" ]; then
   git push -q -u origin "$BRANCH"
 else
   gh repo fork "$UPSTREAM" --clone=false >/dev/null 2>&1 || true
-  git remote get-url fork >/dev/null 2>&1 || git remote add fork "https://github.com/$LOGIN/${UPSTREAM##*/}.git"
-  for _ in 1 2 3 4 5; do git push -q -u fork "$BRANCH" && break; sleep 3; done
+  FORK_URL="https://github.com/$LOGIN/${UPSTREAM##*/}.git"
+  pushed=0
+  for _ in 1 2 3 4 5; do
+    if git push -q "$FORK_URL" "$BRANCH"; then pushed=1; break; fi
+    sleep 3
+  done
+  [ "$pushed" = 1 ] || { echo "push to $FORK_URL failed; the commit is on local branch $BRANCH" >&2; exit 5; }
 fi
 
 PR_URL="$(gh pr create --repo "$UPSTREAM" --base main --head "$HEAD" --title "$TITLE" --body-file "$BODY")"

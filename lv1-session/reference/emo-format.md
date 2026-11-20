@@ -47,6 +47,7 @@ An LV1 `.emo` session (v17.3) is a plain SQLite database and can be edited with 
 - **Preset chunks:** `<Parameters Type="RealWorld">` holds the values in the order of the plugin's `Contents/Resources/ParamXML/1000.xml` (in `/Applications/Waves/Plug-Ins V*/EMO-*.bundle`); `*` = display-only.
   - The Session Editor shows no plugins until they're installed through Waves Central.
   - eMo codes:
+    - Q4 stock default: all four bands ON at 0 dB (`PARAM_BAND_STATE`, `PARAM_BAND<n>_STATE_L/_R` = 1).
     - Q4 band 1 type: 0 Bell, 1 Low-Shelf, 2 Hi-Pass. Band 2: Bell / Low-Shelf. Band 3: Bell / Hi-Shelf. Band 4: Bell, Hi-Shelf, Low-Pass.
     - D5 knee: 0 Soft, 1 Normal, 2 Hard.
     - D5 release mode: 0 Manual. The release knob is `PARAM_COMP_MAX_REL`.

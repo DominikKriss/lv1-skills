@@ -67,8 +67,8 @@ def main(src, dst, layout_path, x32=None):
             rack.set_stereo(cur, chainer, snaps)
         elif stereo:
             cur.execute("update chainer set num_inputs=2 where obj_id=?", (chainer,))
-        elif not stereo:
-            cur.execute("update chainer set num_inputs=1 where obj_id=?", (chainer,))
+        else:
+            rack.set_mono(cur, chainer, snaps)
 
     def send(t, i, kind, idx, db_val, pick):
         sfx = send_suffix(kind, idx)
@@ -81,6 +81,8 @@ def main(src, dst, layout_path, x32=None):
         set_name(T_INPUT, i, name)
         if name in stereo_in:
             rack.set_stereo(cur, obj[(T_INPUT, i)], snaps)
+        else:
+            rack.set_mono(cur, obj[(T_INPUT, i)], snaps)
         if rack_cfg:
             notes = rack.build_rack(cur, obj[(T_INPUT, i)], name in stereo_in, rack_cfg["slots"], donor,
                                     rack_cfg.get("plugins", {}), name, snaps)

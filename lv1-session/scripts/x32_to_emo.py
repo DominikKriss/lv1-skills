@@ -97,14 +97,16 @@ def main(path):
         eq_on = c["eq"][0] == "ON"
         eq = eq_rows(c) if eq_on else []
         g, d, df, gf = c["gate"], c["dyn"], c["dyn/filter"], c.get("gate/filter", ["OFF", "3.0", "1k00"])
-        active = (eq and any("Off" not in r for r in eq)) or g[0] == "ON" or d[0] == "ON" or hpon == "ON"
+        active = ((eq and any("Off" not in r for r in eq)) or g[0] == "ON" or d[0] == "ON" or hpon == "ON"
+                  or float(trim) != 0 or inv == "ON")
         if SKIP_FLAT and not active:
             continue
         block = routing_in[(n - 1) // 8]
         out.append(f"## Ch {n} {name[n]}  (X32 source {block})")
         inp = [f"trim {trim} dB"]
-        if block.startswith("AN"):
-            h = head.get(n - 25, ["+0.0", "OFF"])
+        local = re.match(r"AN(\d+)-", block)
+        if local:
+            h = head.get(int(local.group(1)) - 1 + (n - 1) % 8, ["+0.0", "OFF"])
             inp.append(f"preamp gain {h[0]} dB, phantom {h[1]}")
         if inv == "ON":
             inp.append("**polarity invert ON**")
