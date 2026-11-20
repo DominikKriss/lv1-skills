@@ -13,7 +13,8 @@ FAKE_GH = """#!/bin/sh
 echo "gh $*" >> "$FAKE_GH_LOG"
 case "$1 $2" in
   "api user") [ -n "$FAKE_GH_LOGIN" ] || exit 1; echo "$FAKE_GH_LOGIN" ;;
-  "pr create") echo "https://github.com/DominikKriss/lv1-skills/pull/99" ;;
+  "pr create") [ -z "$FAKE_GH_FAIL_PR" ] || exit 1; echo "https://github.com/DominikKriss/lv1-skills/pull/99" ;;
+  "pr list") [ -z "$FAKE_GH_PR_OPEN" ] || echo "https://github.com/DominikKriss/lv1-skills/pull/98" ;;
 esac
 exit 0
 """
@@ -66,8 +67,8 @@ class Contribute(unittest.TestCase):
         os.environ.update(os.environ_backup)
         self.tmp.cleanup()
 
-    def run_script(self, *extra, login="DominikKriss"):
-        env = dict(self.env, FAKE_GH_LOGIN=login)
+    def run_script(self, *extra, login="DominikKriss", **env_extra):
+        env = dict(self.env, FAKE_GH_LOGIN=login, **env_extra)
         return subprocess.run(["bash", str(self.skill / "scripts" / "contribute.sh"), "--title", "Fix a thing",
                                "--body-file", str(self.body), *extra], env=env, capture_output=True, text=True)
 
@@ -144,6 +145,37 @@ class Contribute(unittest.TestCase):
         r = subprocess.run(["bash", str(single / "lv1-session" / "scripts" / "contribute.sh"), "--title", "t",
                             "--body-file", str(self.body), "--dry-run"], env=self.env, capture_output=True, text=True)
         self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+    def test_chosen_email_wins_over_git_identity_variables(self):
+        (self.skill / "SKILL.md").write_text("skill v2\n")
+        r = self.run_script("--email", "1+me@users.noreply.github.com", GIT_AUTHOR_EMAIL="private@example.com",
+                            GIT_COMMITTER_EMAIL="private@example.com")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        log = git(self.upstream, "log", "-1", "--format=%ae %ce", "learn/fix-a-thing")
+        self.assertEqual(log.split(), ["1+me@users.noreply.github.com"] * 2)
+
+    def test_resume_after_the_pr_could_not_be_opened(self):
+        (self.skill / "SKILL.md").write_text("skill v2\n")
+        first = self.run_script(FAKE_GH_FAIL_PR="1")
+        self.assertEqual(first.returncode, 5, first.stdout + first.stderr)
+        commits = git(self.clone, "rev-list", "--count", "HEAD")
+        again = self.run_script()
+        self.assertEqual(again.returncode, 0, again.stdout + again.stderr)
+        self.assertIn("resuming", again.stdout)
+        self.assertEqual(git(self.clone, "rev-list", "--count", "HEAD"), commits)
+        self.assertEqual(self.log.read_text().count("pr create"), 2)
+
+    def test_resume_when_the_pr_is_already_open(self):
+        (self.skill / "SKILL.md").write_text("skill v2\n")
+        self.run_script(FAKE_GH_FAIL_PR="1")
+        r = self.run_script(FAKE_GH_PR_OPEN="1")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("already open", r.stdout)
+
+    def test_learn_branch_with_other_files_is_not_resumed(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.clone / "README.md").write_text("local\n")
+        git(self.clone, "commit", "-qam", "local")
+        self.assertEqual(self.run_script("--dry-run").returncode, 1)
 
 if __name__ == "__main__":
     unittest.main()

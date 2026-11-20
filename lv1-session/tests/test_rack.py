@@ -100,6 +100,19 @@ class BuildRack(Base):
         with self.assertRaises(SystemExit):
             self.build({"1": "EMO-D5", "3": "EMO-D5"})
 
+    def test_every_instance_of_an_unlisted_plugin_is_removed(self):
+        fixtures.add_plug(self.cur, self.chainer, 5, "EMO-D5", "CDYM", fixtures.chunk("EMO-D5", "CDYM"), [-1, 0],
+                          role=1)
+        self.build({"1": "EMO-Q4"})
+        self.assertEqual([n for _s, n, _c in self.rack()], ["EMO-Q4"])
+        self.assertTrue(fixtures.ref_counts_ok(self.path))
+
+    def test_plugin_used_by_hot_plug_is_not_removed(self):
+        d5 = self.cur.execute("select id from plug where chainer_id=? and plugin_name='EMO-D5'",
+                              (self.chainer,)).fetchone()[0]
+        self.cur.execute("insert into hot_plug values (1, ?)", (d5,))
+        with self.assertRaises(SystemExit):
+            self.build({"1": "EMO-Q4"})
 
 class SecondD5(Base):
     def test_every_d5_instance_changes_width(self):

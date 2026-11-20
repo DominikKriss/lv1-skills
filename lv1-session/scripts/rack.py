@@ -99,15 +99,22 @@ def build_rack(cur, chainer, stereo, slots, donor, donor_cfg, input_name, snaps)
     twice = sorted({n for n in want.values() if n in EMO and list(want.values()).count(n) > 1})
     if twice:
         raise SystemExit(f"{input_name}: {', '.join(twice)} listed in more than one slot; each channel has one")
-    existing = {name: pid for pid, name in cur.execute("select id, plugin_name from plug where chainer_id=?", (chainer,))}
+    rows = cur.execute("select id, plugin_name from plug where chainer_id=? order by slot", (chainer,)).fetchall()
+    existing = {}
+    for pid, name in rows:
+        if name in EMO and name in want.values() and name not in existing:
+            existing[name] = pid
+    drop = [pid for pid, name in rows if existing.get(name) != pid]
+    for pid in drop:
+        for t in ("hot_plug", "midi_learn"):
+            if cur.execute(f"select count(*) from {t} where plug_id=?", (pid,)).fetchone()[0]:
+                raise SystemExit(f"{input_name}: plugin {pid} is used in {t}; not replacing the rack")
+    for pid in drop:
+        cur.execute("delete from snapshot_plugin where plug_id=?", (pid,))
+        cur.execute("delete from plug_sidechain where plug_id=?", (pid,))
+        cur.execute("delete from plug where id=?", (pid,))
     for name, pid in existing.items():
-        if name not in want.values() or name not in EMO:
-            cur.execute("delete from snapshot_plugin where plug_id=?", (pid,))
-            cur.execute("delete from plug_sidechain where plug_id=?", (pid,))
-            cur.execute("delete from plug where id=?", (pid,))
-    for name, pid in existing.items():
-        if name in EMO and name in want.values():
-            cur.execute("update plug set slot=? where id=?", (-100 - pid, pid))
+        cur.execute("update plug set slot=? where id=?", (-100 - pid, pid))
     width = "stereo" if stereo else "mono"
     for slot, name in sorted(want.items()):
         if name in EMO:

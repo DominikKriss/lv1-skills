@@ -37,7 +37,7 @@ The file format is documented in [`reference/emo-format.md`](reference/emo-forma
   - `rack` (optional): the same plugin rack on every input. `slots` maps the 1-based rack slot to a plugin name (`EMO-F2/D5/Q4` are moved, everything else is removed). Other plugins are copied from `donor`, a session the user saved with the plugin in use (path relative to the layout file). `plugins.<name>.channels` maps LV1 input → donor channel for that plugin's settings, `default.mono` / `default.stereo` name the donor channels used otherwise, `override` sets preset values by token position (e.g. Q1 gain = tokens 102/103). With `rack`, the X32 rack order is not applied; the report flags channels whose X32 comp ran pre-EQ.
   - `mons`: Mon aux in order. Each has `name`, `stereo`, an optional `matrix` (1-based matrix fed by this Mon, named `matrix_name` or the Mon name), `own` (inputs sent at `own_db` pre-fade in this mix) and `sends: false` for mixes left empty (spares).
   - `levels`: `other_db` (every other input, post-pan) and `own_db`. `always_pre_0db` lists inputs sent pre-fade at `own_db` into every mix (talkback); `no_mon_sends` lists inputs sent to no Mon mix (private talkback, measurement mic).
-  - `fx`: FX aux in order. `feeds` maps input → `[dB, "INP"|"PRE"|"PST"|"PSP"]`; `dedicated_to` = the Mon name that gets this FX back at `fx_returns.own_db` (`other_db` everywhere else). FX without feeds get no returns.
+  - `fx`: FX aux in order. `feeds` maps input → `[dB, "INP"|"PRE"|"PST"|"PSP"]`; `dedicated_to` = the Mon name that gets this FX back at `fx_returns.own_db` (`other_db` everywhere else). FX without feeds are left as the source session has them, returns included; clear those returns in LV1 if that FX should stay out of the mixes.
   - `colors` (optional): `[{"value": 4, "inputs": [names], "mons": [1-based], "matrices": [...], "fx": [...], "groups": [...]}]` sets channel colours (`PARAM_COLOR_VALUE`); the palette index → colour table is in [`reference/emo-format.md`](reference/emo-format.md).
   - `x32_to_lv1`: X32 channel → LV1 channel (1-based). Needed only with an X32 scene.
 - **X32 scene (optional):** a complete `.scn` exported from the X32 (check that `file` reports ASCII and that the file isn't truncated).
@@ -94,7 +94,7 @@ Plugin settings other than eMo can't be decoded without the plugin's ParamXML in
 
 ## Conversion rules (X32 → eMo)
 
-- **Trim:** X32 trim goes to LV1 digital trim, max +10 dB. The rest goes to the Q4 output gain.
+- **Trim:** X32 trim goes to LV1 digital trim, max +10 dB. The rest goes to the Q4 output gain. Where D5 runs before Q4, its gate and comp thresholds are lowered by that rest, so D5 acts on the level the X32 dynamics saw (reported).
 - **High-pass:** X32 low cut → F2 HPF.
 - **EQ:** the four X32 bands are placed into Q4 slots in frequency order, within each slot's limits:
   - band 1: Bell / Low-Shelf / Hi-Pass
@@ -103,9 +103,9 @@ Plugin settings other than eMo can't be decoded without the plugin's ParamXML in
   - band 4: Bell / Hi-Shelf / Low-Pass
 
   Flat bands are switched off, like every Q4 band the X32 doesn't use (the stock Q4 default has all four on at 0 dB). A band that doesn't fit is dropped and reported.
-- **Rack order:** an X32 compressor set to POST EQ → F2 → Q4 → D5; otherwise F2 → D5 → Q4. The order is set, not swapped, so a rebuild from an earlier output gets the same order. With `rack`, each eMo plugin may appear in one slot only; a missing eMo plugin is reported and its settings skipped.
-- **Gate:** floor = −range; release capped at 1000 ms. X32 bandpass key filters become HPF/LPF at the −3 dB edges.
-- **Compressor:**
+- **Rack order:** an X32 compressor set to POST EQ → F2 → Q4 → D5; otherwise F2 → D5 → Q4. The order is set, not swapped, so a rebuild from an earlier output gets the same order. With `rack`, each eMo plugin may appear in one slot only; a missing eMo plugin is reported and its settings skipped. A bypassed F2 / D5 / Q4 that gets settings stays bypassed and is reported. Plugins still used by a hot-plug key or MIDI learn are never removed: the build stops.
+- **Gate:** GATE mode only; EXP2-4 and DUCK are reported and the D5 gate left off (the D5 expander code isn't known yet). Floor = −range; release capped at 1000 ms. X32 bandpass key filters become HPF/LPF at the −3 dB edges.
+- **Compressor:** COMP mode only; EXP is reported and the D5 comp left off.
   - ratio capped at 20
   - knee: X32 0 → Hard, 1–2 → Normal, 3–5 → Soft
   - release Manual, written to `PARAM_COMP_MAX_REL`
@@ -133,7 +133,7 @@ If there is a lesson:
 3. **Dry run and ask.** Run `bash <skill-dir>/scripts/contribute.sh --title "<title>" --body-file <file> --dry-run`. Tell the user in two or three lines what the skill learned, show the dry-run output (GitHub account, commit author, files) and ask whether to open the pull request from their account. If the commit author email is one they'd rather not publish, offer their GitHub noreply address (`<id>+<login>@users.noreply.github.com`) with `--email`.
 4. **Only after a clear yes**, run it again without `--dry-run` and give the user the PR link. The maintainer reviews it; the user's local copy keeps the change meanwhile. On a no, leave the change local or revert it, as the user prefers.
 
-The script needs the GitHub CLI logged in (`gh auth login`). It forks the repo to the user's account, commits only this skill folder on a `learn/…` branch and refuses session / scene files, files staged outside the skill folder, and local commits that aren't on upstream `main`. After opening the PR it asks CodeRabbit for a review; mention its comments to the user, the maintainer decides. If the skill was copied rather than cloned, it compares the folder with a fresh clone of `main`; check the file list for upstream changes showing as removed. Without `gh`, offer an issue at https://github.com/DominikKriss/lv1-skills/issues with the same body instead.
+The script needs the GitHub CLI logged in (`gh auth login`). It forks the repo to the user's account, commits only this skill folder on a `learn/…` branch and refuses session / scene files, files staged outside the skill folder, and local commits that aren't on upstream `main`. If pushing or opening the PR fails after the commit, run it again on the same `learn/…` branch: it publishes the existing commit instead of making a new one. `--email` also overrides `GIT_AUTHOR_EMAIL` / `GIT_COMMITTER_EMAIL`. After opening the PR it asks CodeRabbit for a review; mention its comments to the user, the maintainer decides. If the skill was copied rather than cloned, it compares the folder with a fresh clone of `main`; check the file list for upstream changes showing as removed. Without `gh`, offer an issue at https://github.com/DominikKriss/lv1-skills/issues with the same body instead.
 
 ## Tests
 

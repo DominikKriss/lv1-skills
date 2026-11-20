@@ -4,21 +4,18 @@ Parameter order: ParamXML of the installed EMO-F2 / EMO-D5 / EMO-Q4 bundles (or 
 Preset chunks are positional RealWorld values; '*' = display-only slot. Hash = SHA3-256 of the chunk text.
 """
 import hashlib
-import itertools
 import math
 import re
 import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from x32_to_emo import hz, parse
+from x32_to_emo import hz, parse, place_eq
 
 PLUGIN_DIRS = sorted(Path("/Applications/Waves").glob("Plug-Ins V*"), reverse=True)
 
 LOW_TYPE = {"Bell": 0, "LowShelf": 1, "HighPass": 2}
 HIGH_TYPE = {"Bell": 0, "HighShelf": 1, "LowPass": 2}
-SLOT_TYPES = {1: {"Bell", "LowShelf", "HighPass"}, 2: {"Bell", "LowShelf"},
-              3: {"Bell", "HighShelf"}, 4: {"Bell", "HighShelf", "LowPass"}}
 KNEE = {"Soft": 0, "Normal": 1, "Hard": 2}
 REL_MANUAL = 0
 TRIM_MAX = 10.0
@@ -61,49 +58,26 @@ def key_filter(flt):
     return bp_edges(f, float(typ))
 
 
-def place_eq(bands):
-    """Assign X32 EQ bands to Q4 slots 1-4 within the per-slot type limits, keeping frequency order."""
-    kinds = []
-    for typ, f, g, q in bands:
-        kind = {"PEQ": "Bell", "VEQ": "Bell", "LShv": "LowShelf", "HShv": "HighShelf",
-                "LCut": "HighPass", "HCut": "LowPass"}[typ]
-        if kind in ("Bell", "LowShelf", "HighShelf") and g == 0:
-            continue
-        kinds.append((kind, f, g, q))
-    best, dropped = None, []
-    for perm in itertools.permutations(range(1, 5), len(kinds)):
-        if all(k[0] in SLOT_TYPES[s] for k, s in zip(kinds, perm)):
-            inv = sum(1 for (a, sa), (b, sb) in itertools.combinations(zip(kinds, perm), 2)
-                      if (a[1] - b[1]) * (sa - sb) < 0)
-            if best is None or inv < best[0]:
-                best = (inv, perm)
-    if best is None:
-        kinds = sorted(kinds, key=lambda k: abs(k[2]) if k[0] != "HighPass" else 99, reverse=True)
-        while kinds and best is None:
-            dropped.append(kinds.pop())
-            for perm in itertools.permutations(range(1, 5), len(kinds)):
-                if all(k[0] in SLOT_TYPES[s] for k, s in zip(kinds, perm)):
-                    best = (0, perm)
-                    break
-    return {s: k for k, s in zip(kinds, best[1] if best else ())}, dropped
-
-
 def x32_settings(c):
     """X32 /ch/NN/* lines -> plain settings dict for the eMo writer."""
     trim, inv, hpon, _slope, hpf = c["preamp"][:5]
     s = {"trim": float(trim), "invert": inv == "ON",
          "hp": hz(hpf.strip()) if hpon == "ON" else None, "eq": {}, "eq_dropped": [],
-         "gate": None, "comp": None, "comp_post_eq": False}
+         "gate": None, "comp": None, "comp_post_eq": False, "not_converted": []}
     if c["eq"][0] == "ON":
         bands = [(b[0], hz(b[1]), float(b[2]), float(b[3])) for b in (c[f"eq/{i}"] for i in range(1, 5))]
         s["eq"], s["eq_dropped"] = place_eq(bands)
     g = c["gate"]
-    if g[0] == "ON":
+    if g[0] == "ON" and g[1] != "GATE":
+        s["not_converted"].append(f"X32 gate mode {g[1]} not converted, D5 gate off")
+    elif g[0] == "ON":
         hp, lp = key_filter(c.get("gate/filter", ["OFF", "3.0", "1k00"]))
         s["gate"] = {"thr": float(g[2]), "floor": -float(g[3]), "att": float(g[4]), "hold": float(g[5]),
                      "rel": float(g[6]), "key_hp": hp, "key_lp": lp}
     d = c["dyn"]
-    if d[0] == "ON":
+    if d[0] == "ON" and d[1] != "COMP":
+        s["not_converted"].append(f"X32 dynamics mode {d[1]} not converted, D5 comp off")
+    elif d[0] == "ON":
         _on, _mode, _det, _env, thr, ratio, kn, mg, att, _hold, rel, pos, _ks, mix = d[:14]
         k = int(kn)
         hp, lp = key_filter(c["dyn/filter"])
@@ -204,9 +178,26 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps, fixed_rack=False):
     for x32n, lv1i in sorted(ch_map.items()):
         s = x32_settings(ch[x32n])
         chainer = obj_ids[lv1i]
-        vals = {"EMO-F2": f2_values(s), "EMO-D5": d5_values(s), "EMO-Q4": q4_values(s)}
         plugs = dict(cur.execute("select plugin_name, id from plug where chainer_id=?", (chainer,)))
-        notes = [f"{p} not in the rack, its settings skipped" for p in vals if p not in plugs]
+        notes = list(s["not_converted"])
+        notes += [f"{p} not in the rack, its settings skipped" for p in names if p not in plugs]
+        if not fixed_rack and "EMO-D5" in plugs and "EMO-Q4" in plugs:
+            slots = dict(cur.execute("select plugin_name, slot from plug where chainer_id=?", (chainer,)))
+            if (slots["EMO-Q4"] < slots["EMO-D5"]) != s["comp_post_eq"]:
+                d5, q4 = plugs["EMO-D5"], plugs["EMO-Q4"]
+                cur.execute("update plug set slot=-1 where id=?", (d5,))
+                cur.execute("update plug set slot=? where id=?", (slots["EMO-D5"], q4))
+                cur.execute("update plug set slot=? where id=?", (slots["EMO-Q4"], d5))
+        slots = dict(cur.execute("select plugin_name, slot from plug where chainer_id=?", (chainer,)))
+        extra = s["trim"] - TRIM_MAX if s["trim"] > TRIM_MAX else 0.0
+        d5_before_gain = "EMO-Q4" not in plugs or ("EMO-D5" in plugs and slots["EMO-D5"] < slots["EMO-Q4"])
+        if extra and d5_before_gain and (s["gate"] or s["comp"]):
+            for k in ("gate", "comp"):
+                if s[k]:
+                    s[k]["thr"] -= extra
+            notes.append(f"D5 thresholds {-extra:+.1f} dB: D5 runs before the Q4 gain, so it gets {extra:.1f} dB less")
+        vals = {"EMO-F2": f2_values(s), "EMO-D5": d5_values(s), "EMO-Q4": q4_values(s)}
+        active = {"EMO-F2": bool(s["hp"]), "EMO-D5": bool(s["gate"] or s["comp"]), "EMO-Q4": bool(s["eq"] or extra)}
         for pname, v in vals.items():
             if pname not in plugs:
                 continue
@@ -227,23 +218,20 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps, fixed_rack=False):
                 if old and old[0] != new_id:
                     cur.execute("update snapshot_plugin set preset_id=? where plug_id=? and snapshot_id=?",
                                 (new_id, plugs[pname], snap))
+            bypassed = cur.execute("select count(*) from snapshot_plugin where plug_id=? and bypass",
+                                   (plugs[pname],)).fetchone()[0]
+            if active[pname] and bypassed:
+                notes.append(f"{pname} is bypassed in the session; settings written, left bypassed")
         for snap in snaps:
             phase, trim = 1 if s["invert"] else 0, min(s["trim"], TRIM_MAX)
             for n, x in [(f"PARAM_INPUT_PHASE_ONOFF{sfx}", phase) for sfx in ("", "_L", "_R")] + \
                         [(f"PARAM_INPUT_DIGITAL_TRIM{sfx}", trim) for sfx in ("", "_L", "_R")]:
                 cur.execute("insert or replace into snapshot_chainer_params values (?,?,?,?)",
                             (chainer, snap, pid[n], float(x)))
-        if not fixed_rack and "EMO-D5" in plugs and "EMO-Q4" in plugs:
-            slots = dict(cur.execute("select plugin_name, slot from plug where chainer_id=?", (chainer,)))
-            if (slots["EMO-Q4"] < slots["EMO-D5"]) != s["comp_post_eq"]:
-                d5, q4 = plugs["EMO-D5"], plugs["EMO-Q4"]
-                cur.execute("update plug set slot=-1 where id=?", (d5,))
-                cur.execute("update plug set slot=? where id=?", (slots["EMO-D5"], q4))
-                cur.execute("update plug set slot=? where id=?", (slots["EMO-Q4"], d5))
-        if s["trim"] > TRIM_MAX and "EMO-Q4" in plugs:
-            notes.append(f"trim {s['trim']:+.1f} dB -> {TRIM_MAX:+.0f} trim + {s['trim'] - TRIM_MAX:+.1f} Q4 out")
-        elif s["trim"] > TRIM_MAX:
-            notes.append(f"trim {s['trim']:+.1f} dB -> {TRIM_MAX:+.0f} trim, {s['trim'] - TRIM_MAX:+.1f} dB missing"
+        if extra and "EMO-Q4" in plugs:
+            notes.append(f"trim {s['trim']:+.1f} dB -> {TRIM_MAX:+.0f} trim + {extra:+.1f} Q4 out")
+        elif extra:
+            notes.append(f"trim {s['trim']:+.1f} dB -> {TRIM_MAX:+.0f} trim, {extra:+.1f} dB missing"
                          " (no EMO-Q4 to make it up)")
         if s["eq_dropped"]:
             notes.append("EQ band dropped: " + ", ".join(f"{k} {f:.0f} Hz" for k, f, _g, _q in s["eq_dropped"]))
@@ -255,5 +243,6 @@ def apply(cur, obj_ids, x32_scene, ch_map, snaps, fixed_rack=False):
             order = "rack from layout" + ("" if s["comp_post_eq"] or not s["comp"] else ", X32 comp was PRE EQ")
         else:
             order = "F2 Q4 D5" if s["comp_post_eq"] else "F2 D5 Q4"
-        report.append(f"X32 ch {x32n} {xname[x32n]} -> LV1 ch {lv1i + 1}: {order}" + (f" ({'; '.join(notes)})" if notes else ""))
+        report.append(f"X32 ch {x32n} {xname[x32n]} -> LV1 ch {lv1i + 1}: {order}"
+                      + (f" ({'; '.join(notes)})" if notes else ""))
     return report

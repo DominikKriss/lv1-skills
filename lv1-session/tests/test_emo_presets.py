@@ -160,5 +160,46 @@ class Apply(unittest.TestCase):
         self.assertIn("+8.0 dB missing", report[0])
         self.assertNotIn("Q4 out", report[0])
 
+    def test_gate_modes_other_than_gate_are_not_converted(self):
+        report = self.apply(gate={"on": "ON"}, gate_mode="DUCK")
+        self.assertIn("gate mode DUCK not converted", report[0])
+        s = self.session()
+        self.assertEqual(s.preset_values(T_INPUT, 0, "EMO-D5")["PARAM_GATE_ON"], "0")
+        s.close()
+
+    def test_expander_is_not_converted_to_a_compressor(self):
+        report = self.apply(dyn={"on": "ON"}, dyn_mode="EXP")
+        self.assertIn("dynamics mode EXP not converted", report[0])
+        s = self.session()
+        self.assertEqual(s.preset_values(T_INPUT, 0, "EMO-D5")["PARAM_COMP_ON"], "0")
+        s.close()
+
+    def test_d5_before_q4_keeps_the_x32_drive(self):
+        report = self.apply(trim="+18.0", dyn={"on": "ON", "thr": "-20.0"}, gate={"on": "ON", "thr": "-40.0"})
+        s = self.session()
+        d5 = s.preset_values(T_INPUT, 0, "EMO-D5")
+        s.close()
+        self.assertEqual((float(d5["PARAM_COMP_THRESH"]), float(d5["PARAM_GATE_THRESH"])), (-28.0, -48.0))
+        self.assertIn("D5 thresholds -8.0 dB", report[0])
+
+    def test_d5_after_q4_keeps_the_x32_thresholds(self):
+        report = self.apply(trim="+18.0", dyn={"on": "ON", "thr": "-20.0"}, dyn_pos="POST")
+        s = self.session()
+        self.assertEqual(float(s.preset_values(T_INPUT, 0, "EMO-D5")["PARAM_COMP_THRESH"]), -20.0)
+        s.close()
+        self.assertNotIn("D5 thresholds", report[0])
+
+    def test_bypassed_plugin_is_reported_and_left_bypassed(self):
+        db = sqlite3.connect(self.path)
+        db.execute("update snapshot_plugin set bypass=1 where plug_id=(select id from plug where plugin_name="
+                   "'EMO-Q4' and chainer_id=(select id from object where obj_type=0 and obj_index=0))")
+        db.commit()
+        db.close()
+        report = self.apply(eq_on="ON", eq=[("PEQ", "1k00", "+3.00", "2.0")])
+        self.assertIn("EMO-Q4 is bypassed", report[0])
+        s = self.session()
+        self.assertEqual(s.db.execute("select count(*) from snapshot_plugin where bypass=1").fetchone()[0], 2)
+        s.close()
+
 if __name__ == "__main__":
     unittest.main()

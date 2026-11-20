@@ -242,7 +242,7 @@ X32_ROUTING = "/config/routing/IN AN1-8 AN9-16 AN17-24 AN25-32 AUX/CR"
 
 
 def x32_channel(n, name="CH", source=None, trim="+0.0", inv="OFF", hp=("OFF", "80"), eq_on="OFF", eq=None,
-                gate=None, dyn=None, dyn_pos="PRE", gate_filter=("OFF", "3.0", "1k00"), dyn_filter=("OFF", "3.0", "1k00")):
+                gate=None, dyn=None, gate_mode="GATE", dyn_mode="COMP", dyn_pos="PRE", gate_filter=("OFF", "3.0", "1k00"), dyn_filter=("OFF", "3.0", "1k00")):
     """Lines of one /ch/NN block. eq: up to 4 (type, freq, gain, q); gate / dyn: dicts of overrides."""
     c = f"/ch/{n:02d}"
     bands = list(eq or []) + [("PEQ", "1k00", "+0.00", "2.0")] * (4 - len(eq or []))
@@ -251,9 +251,9 @@ def x32_channel(n, name="CH", source=None, trim="+0.0", inv="OFF", hp=("OFF", "8
          "mix": "100"} | (dyn or {})
     lines = [f'{c}/config "{name}" 1 RD {n if source is None else source}',
              f"{c}/preamp {trim} {inv} {hp[0]} 24 {hp[1]}",
-             f"{c}/gate {g['on']} GATE {g['thr']} {g['range']} {g['att']} {g['hold']} {g['rel']} 0",
+             f"{c}/gate {g['on']} {gate_mode} {g['thr']} {g['range']} {g['att']} {g['hold']} {g['rel']} 0",
              f"{c}/gate/filter {' '.join(gate_filter)}",
-             f"{c}/dyn {d['on']} COMP PEAK LIN {d['thr']} {d['ratio']} {d['knee']} {d['makeup']} {d['att']} 0.02"
+             f"{c}/dyn {d['on']} {dyn_mode} PEAK LIN {d['thr']} {d['ratio']} {d['knee']} {d['makeup']} {d['att']} 0.02"
              f" {d['rel']} {dyn_pos} 0 {d['mix']} OFF",
              f"{c}/dyn/filter {' '.join(dyn_filter)}", f"{c}/eq {eq_on}"]
     lines += [f"{c}/eq/{i} {' '.join(b)}" for i, b in enumerate(bands, 1)]

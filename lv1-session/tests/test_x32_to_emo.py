@@ -77,5 +77,23 @@ class Report(unittest.TestCase):
         self.assertIn("(X32 source AN9-16)", out)
         self.assertIn("preamp gain +12.5 dB, phantom OFF", out)
 
+    def test_eq_report_uses_the_q4_slot_limits(self):
+        scene = fixtures.write_scene(self.dir / "s.scn", {1: {"name": "V", "eq_on": "ON",
+                                                              "eq": [("HShv", "8k00", "+3.00", "1.0")]}})
+        out = run(scene)
+        self.assertIn("1: Off | 2: Off | 3: High Shelf 8.00 kHz +3.00 dB", out)
+
+    def test_eq_report_marks_x32_veq(self):
+        scene = fixtures.write_scene(self.dir / "s.scn", {1: {"name": "V", "eq_on": "ON",
+                                                              "eq": [("VEQ", "267.0", "-8.50", "3.7")]}})
+        self.assertIn("Bell (X32 VEQ) 267 Hz -8.50 dB", run(scene))
+
+    def test_unconverted_dynamics_modes_are_reported(self):
+        scene = fixtures.write_scene(self.dir / "s.scn", {1: {"name": "V", "gate": {"on": "ON"}, "gate_mode": "EXP2",
+                                                              "dyn": {"on": "ON"}, "dyn_mode": "EXP"}})
+        out = run(scene)
+        self.assertIn("D5 Gate: Off (X32 gate mode EXP2 not converted)", out)
+        self.assertIn("D5 Comp: Off (X32 dynamics mode EXP not converted)", out)
+
 if __name__ == "__main__":
     unittest.main()
