@@ -71,8 +71,12 @@ if git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n' | gr
   echo "refusing: session / scene files are among the changes; keep them out of the skill folder" >&2
   exit 4
 fi
-HISTORY_FILES="$(git log --name-only --format= "$UPSTREAM_MAIN..HEAD" -- "$REL")"
-if printf '%s\n' "$HISTORY_FILES" | grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$'; then
+HISTORY_HIT=0
+for c in $(git rev-list "$UPSTREAM_MAIN..HEAD"); do
+  NAMES="$(git diff-tree -r -m --root --no-commit-id --name-only -z "$c" -- "$REL" | tr '\0' '\n')"
+  if printf '%s\n' "$NAMES" | grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$'; then HISTORY_HIT=1; fi
+done
+if [ "$HISTORY_HIT" = 1 ]; then
   echo "refusing: an unpublished commit on this branch holds a session / scene file; it would be published with the history" >&2
   exit 4
 fi

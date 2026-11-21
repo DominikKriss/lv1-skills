@@ -196,6 +196,29 @@ class Contribute(unittest.TestCase):
         self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
         self.assertIn("unpublished commit", r.stderr)
 
+    def test_show_file_with_accented_name_in_history_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "Bänd.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session/Bänd.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "lv1-session/Bänd.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
+    def test_show_file_on_a_merged_side_branch_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        git(self.clone, "checkout", "-q", "-b", "side")
+        (self.skill / "show.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        git(self.clone, "checkout", "-q", "learn/x")
+        git(self.clone, "merge", "-q", "--no-ff", "-m", "merge", "side")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
