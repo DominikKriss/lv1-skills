@@ -34,6 +34,10 @@ New consoles are the contribution we'd love most. You don't need to cover everyt
 
 Questions while you work? Open a draft pull request early; the maintainer is happy to help.
 
+## Decisions and issues
+
+Work is tracked in [GitHub issues](https://github.com/DominikKriss/mixing-console-skills/issues), labelled by type and skill. Decisions that affect more than one skill, or that a contributor would trip over, are recorded as [ADRs](docs/adr/README.md): copy `docs/adr/template.md`, add a row to the index, and propose it in your pull request with status `Proposed`.
+
 ## Branch names
 
 Open or pick an issue first, then branch from `main` as `feature/<issue>_<short-desc>` (or `fix/<issue>_<short-desc>` for a bug), e.g. `feature/8_windows-support`, and put `Closes #<issue>` in the pull request. CI checks the branch name. Pull requests opened by Claude Code's `contribute.sh` use `learn/...` branches and are exempt.

@@ -2,6 +2,12 @@
 
 Read this before changing anything in this repo. `CLAUDE.md` points here.
 
+## Decisions
+
+Read [docs/adr/](docs/adr/README.md) before changing how skills are built: one file per decision, indexed with
+status and scope. A change that contradicts an accepted ADR needs a new ADR that supersedes it (keep the old one,
+set its status to `Superseded by NNNN`). Work items are GitHub issues, labelled with the same scope names.
+
 ## Issues and branches
 
 Every change starts from a GitHub issue. Create the issue first, then a branch from `main` named after it:
