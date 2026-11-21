@@ -105,6 +105,26 @@ class Unpair(unittest.TestCase):
             self.assertEqual(s.values[(IC + "/Signal", "Relation", (ch, 0))], 0)
 
 
+class BuildUnpairs(unittest.TestCase):
+    def test_two_mono_inputs_on_a_paired_base_are_unpaired_by_build(self):
+        paired = {}
+        for ch, rel in ((0, 128), (1, 1)):
+            paired[(IC, "GainGang", (ch,))] = 1
+            paired[(IC, "DelayGang", (ch,))] = 1
+            paired[(IC + "/Signal", "Relation", (ch, 0))] = rel
+        s = fixtures.FakeSession(paired)
+        lay = {"short_names": {}, "colours": {"vox": "Yellow", "fx": "Blue", "spare": "OFF"},
+               "inputs": [{"strip": "ch.1", "name": "VOX 1", "group": "vox"},
+                          {"strip": "ch.2", "name": "VOX 2", "group": "vox"}],
+               "dante_playback_groups": [], "tio_units": 1, "tio_inputs": 16, "playback_dante_start": 17,
+               "mons": [], "fx_sends": [], "main_name": "MAIN", "matrices": [], "dante_outputs": []}
+        b.build(s, lay, ".")
+        for ch in (0, 1):
+            self.assertEqual(s.values[(IC, "GainGang", (ch,))], 0)
+            self.assertEqual(s.values[(IC, "DelayGang", (ch,))], 0)
+            self.assertEqual(s.values[(IC + "/Signal", "Relation", (ch, 0))], 0)
+
+
 class OutputGuard(unittest.TestCase):
     def test_output_over_base_refused_and_base_unchanged(self):
         with tempfile.TemporaryDirectory() as d:

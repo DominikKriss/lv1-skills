@@ -219,6 +219,20 @@ class Contribute(unittest.TestCase):
         r = self.run_script("--dry-run")
         self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
 
+    def test_show_file_in_a_large_commit_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "Bänd.dmxf").write_bytes(b"x")
+        many = self.skill / "many"
+        many.mkdir()
+        for n in range(3000):
+            (many / f"f{n:05d}.txt").write_text("x")
+        git(self.clone, "add", "-f", "lv1-session")
+        git(self.clone, "commit", "-qm", "big")
+        git(self.clone, "rm", "-rq", "lv1-session/Bänd.dmxf", "lv1-session/many")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -74,7 +74,7 @@ fi
 HISTORY_HIT=0
 for c in $(git rev-list "$UPSTREAM_MAIN..HEAD"); do
   NAMES="$(git diff-tree -r -m --root --no-commit-id --name-only -z "$c" -- "$REL" | tr '\0' '\n')"
-  if printf '%s\n' "$NAMES" | grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$'; then HISTORY_HIT=1; fi
+  if grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$' <<<"$NAMES"; then HISTORY_HIT=1; fi
 done
 if [ "$HISTORY_HIT" = 1 ]; then
   echo "refusing: an unpublished commit on this branch holds a session / scene file; it would be published with the history" >&2

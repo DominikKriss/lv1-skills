@@ -6,11 +6,21 @@ sys.path.insert(0, str(SCRIPTS))
 
 
 class FakeSession:
-    def __init__(self):
-        self.values = {}
+    def __init__(self, values=None):
+        self.values = dict(values or {})
+        self.other = {}
 
     def mix(self, path, prm, idx, value):
         self.values[(path, prm, tuple(idx))] = value
+
+    def set(self, entry, sname, path, prm, idx, value):
+        if sname == "Mixing":
+            self.mix(path, prm, idx, value)
+        else:
+            self.other[(entry, sname, path, prm, tuple(idx))] = value
+
+    def get(self, entry, sname, path, prm, idx):
+        return {"DeviceMount": 0, "ModelName": "", "PluginName": ""}.get(prm, 0)
 
 
 def x32_channel():
