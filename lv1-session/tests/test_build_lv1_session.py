@@ -62,14 +62,15 @@ class Build(unittest.TestCase):
 
         bad = json.loads(json.dumps(LAYOUT))
         bad["fx"][0]["feeds"]["VOX"] = [-5.0, "BAD"]
-        bad["rack"] = {"donor": "src.emo"}
+        bad["rack"] = {"donor": "src.emo", "slots": {}}
         path = self.dir / "layout.json"
         path.write_text(json.dumps(bad), encoding="utf-8")
         build_lv1_session.sqlite3.connect = tracking_connect
         rack.sqlite3.connect = tracking_connect
         try:
-            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(Exception):
+            with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(KeyError) as err:
                 build_lv1_session.main(self.src, self.dst, str(path), None)
+            self.assertEqual(err.exception.args, ("BAD",))
         finally:
             build_lv1_session.sqlite3.connect = real_connect
             rack.sqlite3.connect = real_connect

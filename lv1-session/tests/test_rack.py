@@ -71,6 +71,34 @@ class SetMono(Base):
         self.assertTrue(fixtures.ref_counts_ok(self.path))
 
 
+class DonorOpen(unittest.TestCase):
+    def test_malformed_donor_closes_its_connection(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        bad = Path(tmp.name) / "bad.emo"
+        db = sqlite3.connect(str(bad))
+        db.execute("create table object (id integer)")
+        db.commit()
+        db.close()
+        opened = []
+        real_connect = sqlite3.connect
+
+        def tracking_connect(*args, **kwargs):
+            conn = real_connect(*args, **kwargs)
+            opened.append(conn)
+            return conn
+
+        sqlite3.connect = tracking_connect
+        try:
+            with self.assertRaises(sqlite3.OperationalError):
+                rack.Donor(bad)
+        finally:
+            sqlite3.connect = real_connect
+        self.assertEqual(len(opened), 1)
+        with self.assertRaises(sqlite3.ProgrammingError):
+            opened[0].execute("select 1")
+
+
 class BuildRack(Base):
     CFG = {"Q10": {"default": {"mono": "IN 1", "stereo": "IN 2"}, "override": {"102": 7, "103": 7}}}
 

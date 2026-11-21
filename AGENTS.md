@@ -48,7 +48,7 @@ from another skill's folder; shared helpers are copied (for example the X32 scen
 - Scripts run on macOS, Windows and Linux: open text files with `encoding="utf-8"`, close every SQLite
   connection (also on refusals; Windows locks open files), build paths with `pathlib`, keep shell scripts to what
   Git Bash has (no `rsync`, no `python3` assumption). CI runs the tests on all three.
-- Tests: `PY="$(command -v python3 || command -v python)"; for d in */tests; do "$PY" -m unittest discover -s "$d" -t "$d"; done` (CI runs the same, plus
+- Tests: `PY=""; for c in python3 python; do if "$c" -c "" >/dev/null 2>&1; then PY="$c"; break; fi; done; for d in */tests; do "$PY" -m unittest discover -s "$d" -t "$d"; done` (CI runs the same, plus
   ShellCheck on `*/scripts/*.sh`). Add tests with every behaviour change.
 - No narrative code comments; keep only short non-obvious whys. Design reasoning goes in the PR.
 - `main` is protected: changes go through a pull request the maintainer reviews and merges.

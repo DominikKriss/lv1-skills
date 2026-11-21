@@ -71,9 +71,13 @@ class Donor:
 
     def __init__(self, path):
         self.db = open_ro(path)
-        self.chan = {n: cid for cid, n in self.db.execute(
-            "select o.id, sc.name from object o join snapshot_chainer sc on sc.chainer_id=o.id"
-            " where o.obj_type=0 and sc.snapshot_id=-1")}
+        try:
+            self.chan = {n: cid for cid, n in self.db.execute(
+                "select o.id, sc.name from object o join snapshot_chainer sc on sc.chainer_id=o.id"
+                " where o.obj_type=0 and sc.snapshot_id=-1")}
+        except BaseException:
+            self.db.close()
+            raise
 
     def close(self):
         self.db.close()

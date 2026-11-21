@@ -26,14 +26,14 @@ jobs:
           persist-credentials: false
       - name: Unit tests
         run: |
-          PY="$(command -v python3 || command -v python)"
+          PY=""; for c in python3 python; do if "$c" -c "" >/dev/null 2>&1; then PY="$c"; break; fi; done
           "$PY" --version
           for d in */tests; do
             "$PY" -m unittest discover -s "$d" -t "$d" -v
           done
       - name: ADR index
         run: |
-          PY="$(command -v python3 || command -v python)"
+          PY=""; for c in python3 python; do if "$c" -c "" >/dev/null 2>&1; then PY="$c"; break; fi; done
           "$PY" -m unittest discover -s .github/scripts -t .github/scripts -v
           "$PY" .github/scripts/check_adr_index.py
       - name: contribute.sh is the same in every skill
