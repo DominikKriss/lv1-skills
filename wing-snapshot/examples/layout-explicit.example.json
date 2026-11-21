@@ -1,0 +1,311 @@
+{
+ "colours": {
+  "drums": 9,
+  "bass": 13,
+  "guitar": 5,
+  "keys": 3,
+  "vox": 7,
+  "playback": 17,
+  "mon": 10,
+  "fx": 14,
+  "mtx": 16,
+  "main": 18,
+  "group": 12
+ },
+ "inputs": [
+  {
+   "strip": "ch.1",
+   "name": "KICK",
+   "group": "drums",
+   "src": [
+    "A",
+    1
+   ]
+  },
+  {
+   "strip": "ch.2",
+   "name": "SNARE",
+   "group": "drums",
+   "src": [
+    "A",
+    2
+   ]
+  },
+  {
+   "strip": "ch.3",
+   "name": "HAT",
+   "group": "drums",
+   "src": [
+    "A",
+    3
+   ]
+  },
+  {
+   "strip": "ch.4",
+   "name": "OH L",
+   "group": "drums",
+   "src": [
+    "A",
+    4
+   ]
+  },
+  {
+   "strip": "ch.5",
+   "name": "OH R",
+   "group": "drums",
+   "src": [
+    "A",
+    5
+   ]
+  },
+  {
+   "strip": "ch.6",
+   "name": "BASS",
+   "group": "bass",
+   "src": [
+    "A",
+    6
+   ]
+  },
+  {
+   "strip": "ch.7",
+   "name": "GTR",
+   "group": "guitar",
+   "src": [
+    "A",
+    7
+   ]
+  },
+  {
+   "strip": "ch.8",
+   "name": "KEYS LR",
+   "group": "keys",
+   "stereo": true,
+   "src": [
+    "A",
+    9
+   ]
+  },
+  {
+   "strip": "ch.9",
+   "name": "VOX 1",
+   "group": "vox",
+   "src": [
+    "A",
+    11
+   ]
+  },
+  {
+   "strip": "ch.10",
+   "name": "VOX 2",
+   "group": "vox",
+   "src": [
+    "A",
+    12
+   ]
+  },
+  {
+   "strip": "ch.11",
+   "name": "TRACKS LR",
+   "group": "playback",
+   "stereo": true,
+   "src": [
+    "LCL",
+    1
+   ]
+  }
+ ],
+ "outputs": [
+  {
+   "src": "BUS",
+   "strip": 1,
+   "name": "MON 1",
+   "sock": [
+    "A",
+    1
+   ]
+  },
+  {
+   "src": "BUS",
+   "strip": 2,
+   "name": "MON 2",
+   "sock": [
+    "A",
+    2
+   ]
+  },
+  {
+   "src": "BUS",
+   "strip": 3,
+   "name": "MON 3",
+   "sock": [
+    "A",
+    3
+   ]
+  },
+  {
+   "src": "BUS",
+   "strip": 4,
+   "name": "MON 4",
+   "sock": [
+    "A",
+    4
+   ]
+  },
+  {
+   "src": "MTX",
+   "strip": 1,
+   "name": "PA",
+   "stereo": true,
+   "sock": [
+    "A",
+    13
+   ]
+  },
+  {
+   "src": "MTX",
+   "strip": 2,
+   "name": "SUB",
+   "sock": [
+    "A",
+    15
+   ]
+  }
+ ],
+ "main": {
+  "n": 1,
+  "name": "TO ALL MTX",
+  "mono": false
+ },
+ "main_extra": [
+  {
+   "n": 2,
+   "name": "SMAART RET."
+  }
+ ],
+ "mons": [
+  {
+   "bus": 1,
+   "name": "MON 1"
+  },
+  {
+   "bus": 2,
+   "name": "MON 2"
+  },
+  {
+   "bus": 3,
+   "name": "MON 3"
+  },
+  {
+   "bus": 4,
+   "name": "MON 4"
+  }
+ ],
+ "groups": [
+  {
+   "bus": 8,
+   "name": "G DRUMS",
+   "members": [
+    "KICK",
+    "SNARE",
+    "HAT",
+    "OH L",
+    "OH R"
+   ],
+   "dyn": "LA"
+  },
+  {
+   "bus": 9,
+   "name": "G INSTR",
+   "members": [
+    "BASS",
+    "GTR",
+    "KEYS LR"
+   ],
+   "preins": {
+    "slot": 9,
+    "model": "GEQ"
+   },
+   "postins": {
+    "slot": 10,
+    "model": "DEQ3"
+   }
+  },
+  {
+   "bus": 10,
+   "name": "G VOX",
+   "members": [
+    "VOX 1",
+    "VOX 2"
+   ],
+   "preins": {
+    "slot": 11,
+    "model": "C5-CMB"
+   },
+   "dyn": "B160"
+  }
+ ],
+ "fx": [
+  {
+   "bus": 14,
+   "name": "INST REV",
+   "slot": 1,
+   "model": "HALL"
+  },
+  {
+   "bus": 15,
+   "name": "VOC REV",
+   "slot": 2,
+   "model": "HALL"
+  },
+  {
+   "bus": 16,
+   "name": "VOC DLY",
+   "slot": 3,
+   "model": "ST-DL"
+  }
+ ],
+ "unused_buses": [
+  5,
+  6,
+  7,
+  11,
+  12,
+  13
+ ],
+ "dcas": [
+  {
+   "n": 1,
+   "name": "D DRUMS",
+   "col": "drums",
+   "members": [
+    "KICK",
+    "SNARE",
+    "HAT",
+    "OH L",
+    "OH R"
+   ]
+  },
+  {
+   "n": 2,
+   "name": "D VOX",
+   "col": "vox",
+   "members": [
+    "VOX 1",
+    "VOX 2"
+   ]
+  }
+ ],
+ "matrices": [
+  {
+   "n": 1,
+   "name": "PA TOP",
+   "mono": false
+  },
+  {
+   "n": 2,
+   "name": "SUB",
+   "mono": true
+  }
+ ]
+}

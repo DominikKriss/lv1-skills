@@ -27,9 +27,9 @@ See [SKILL.md](SKILL.md) for the fields, the procedure and the X32 → eMo conve
 Install as described in the [repository README](../README.md), then ask Claude Code to prepare, edit or review an LV1 session, or run `/lv1-session`. The scripts also run on their own:
 
 ```sh
-python3 ~/lv1-skills/lv1-session/scripts/build_lv1_session.py in.emo out.emo layout.json [scene.scn]
-python3 ~/lv1-skills/lv1-session/scripts/edit_lv1_session.py in.emo out.emo edits.json
-python3 ~/lv1-skills/lv1-session/scripts/diff_lv1_sessions.py before.emo after.emo
+python3 ~/mixing-console-skills/lv1-session/scripts/build_lv1_session.py in.emo out.emo layout.json [scene.scn]
+python3 ~/mixing-console-skills/lv1-session/scripts/edit_lv1_session.py in.emo out.emo edits.json
+python3 ~/mixing-console-skills/lv1-session/scripts/diff_lv1_sessions.py before.emo after.emo
 ```
 
 ## Requirements

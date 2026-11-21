@@ -1,5 +1,6 @@
 """contribute.sh against local repos: a fake `gh` and file:// remotes stand in for GitHub."""
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -13,8 +14,8 @@ FAKE_GH = """#!/bin/sh
 echo "gh $*" >> "$FAKE_GH_LOG"
 case "$1 $2" in
   "api user") [ -n "$FAKE_GH_LOGIN" ] || exit 1; echo "$FAKE_GH_LOGIN" ;;
-  "pr create") [ -z "$FAKE_GH_FAIL_PR" ] || exit 1; echo "https://github.com/DominikKriss/lv1-skills/pull/99" ;;
-  "pr list") [ -z "$FAKE_GH_PR_OPEN" ] || echo "https://github.com/DominikKriss/lv1-skills/pull/98" ;;
+  "pr create") [ -z "$FAKE_GH_FAIL_PR" ] || exit 1; echo "https://github.com/DominikKriss/mixing-console-skills/pull/99" ;;
+  "pr list") [ -z "$FAKE_GH_PR_OPEN" ] || echo "https://github.com/DominikKriss/mixing-console-skills/pull/98" ;;
 esac
 exit 0
 """
@@ -30,7 +31,7 @@ class Contribute(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         root = Path(self.tmp.name)
         self.hub = root / "hub"
-        upstream = self.hub / "DominikKriss" / "lv1-skills.git"
+        upstream = self.hub / "DominikKriss" / "mixing-console-skills.git"
         upstream.parent.mkdir(parents=True)
         seed = root / "seed"
         (seed / "lv1-session" / "scripts").mkdir(parents=True)
@@ -55,7 +56,7 @@ class Contribute(unittest.TestCase):
         git(seed, "commit", "-q", "-m", "seed")
         git(seed, "push", "-q", str(upstream), "HEAD:main")
         self.clone = root / "clone"
-        git(root, "clone", "-q", "https://github.com/DominikKriss/lv1-skills.git", str(self.clone))
+        git(root, "clone", "-q", "https://github.com/DominikKriss/mixing-console-skills.git", str(self.clone))
         self.skill = self.clone / "lv1-session"
         self.body = root / "body.md"
         self.body.write_text("body\n")
@@ -120,13 +121,13 @@ class Contribute(unittest.TestCase):
         self.assertIn("@coderabbitai review", log)
 
     def test_contributor_pushes_to_their_own_fork(self):
-        fork = self.hub / "alice" / "lv1-skills.git"
+        fork = self.hub / "alice" / "mixing-console-skills.git"
         fork.parent.mkdir()
         git(self.hub, "clone", "-q", "--bare", str(self.upstream), str(fork))
-        bob = self.hub / "bob" / "lv1-skills.git"
+        bob = self.hub / "bob" / "mixing-console-skills.git"
         bob.parent.mkdir()
         git(self.hub, "clone", "-q", "--bare", str(self.upstream), str(bob))
-        git(self.clone, "remote", "add", "fork", "https://github.com/bob/lv1-skills.git")
+        git(self.clone, "remote", "add", "fork", "https://github.com/bob/mixing-console-skills.git")
         (self.skill / "SKILL.md").write_text("skill v2\n")
         r = self.run_script(login="alice")
         self.assertEqual(r.returncode, 0, r.stderr)
@@ -138,7 +139,7 @@ class Contribute(unittest.TestCase):
         git(self.upstream, "branch", "dev", "main")
         single = Path(self.tmp.name) / "single"
         git(self.tmp.name, "clone", "-q", "--single-branch", "--branch", "dev",
-            "https://github.com/DominikKriss/lv1-skills.git", str(single))
+            "https://github.com/DominikKriss/mixing-console-skills.git", str(single))
         (single / "README.md").write_text("local\n")
         git(single, "commit", "-qam", "local")
         (single / "lv1-session" / "SKILL.md").write_text("skill v2\n")
@@ -176,6 +177,98 @@ class Contribute(unittest.TestCase):
         (self.clone / "README.md").write_text("local\n")
         git(self.clone, "commit", "-qam", "local")
         self.assertEqual(self.run_script("--dry-run").returncode, 1)
+
+    def test_resume_on_a_branch_chosen_with_branch(self):
+        (self.skill / "SKILL.md").write_text("skill v2\n")
+        first = self.run_script("--branch", "fix/thing", FAKE_GH_FAIL_PR="1")
+        self.assertEqual(first.returncode, 5, first.stdout + first.stderr)
+        again = self.run_script("--branch", "fix/thing")
+        self.assertEqual(again.returncode, 0, again.stdout + again.stderr)
+        self.assertIn("resuming", again.stdout)
+
+    def test_show_file_committed_on_a_resumed_branch_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "show.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+        self.assertIn("unpublished commit", r.stderr)
+
+    def test_show_file_with_accented_name_in_history_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "Bänd.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session/Bänd.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "lv1-session/Bänd.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
+    def test_show_file_on_a_merged_side_branch_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        git(self.clone, "checkout", "-q", "-b", "side")
+        (self.skill / "show.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "lv1-session/show.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        git(self.clone, "checkout", "-q", "learn/x")
+        git(self.clone, "merge", "-q", "--no-ff", "-m", "merge", "side")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
+    def test_show_file_in_a_large_commit_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "Bänd.dmxf").write_bytes(b"x")
+        many = self.skill / "many"
+        many.mkdir()
+        for n in range(3000):
+            (many / f"f{n:05d}.txt").write_text("x")
+        git(self.clone, "add", "-f", "lv1-session")
+        git(self.clone, "commit", "-qm", "big")
+        git(self.clone, "rm", "-rq", "lv1-session/Bänd.dmxf", "lv1-session/many")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
+    def test_staged_show_file_among_many_changes_is_refused(self):
+        many = self.skill / "many"
+        many.mkdir()
+        for n in range(6000):
+            (many / f"f{n:05d}.txt").write_text("x")
+        (self.skill / "show.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
+    def test_reverted_change_outside_the_skill_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "SKILL.md").write_text("skill v2\n")
+        git(self.clone, "commit", "-qam", "skill")
+        (self.clone / "private.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "private.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "private.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+        self.assertIn("outside", r.stderr)
+
+    def test_copied_install_keeps_the_temporary_clone_when_publishing_fails(self):
+        copy = Path(self.tmp.name) / "copy" / "lv1-session"
+        shutil.copytree(self.skill, copy, ignore=shutil.ignore_patterns(".git"))
+        (copy / "SKILL.md").write_text("skill v2\n")
+        r = subprocess.run(["bash", str(copy / "scripts" / "contribute.sh"), "--title", "Fix", "--body-file",
+                            str(self.body)], env=dict(self.env, FAKE_GH_FAIL_PR="1"), capture_output=True, text=True)
+        self.assertEqual(r.returncode, 5, r.stdout + r.stderr)
+        kept = re.search(r"kept in ([^;\s]+)", r.stderr)
+        self.assertIsNotNone(kept, r.stderr)
+        self.assertTrue(Path(kept.group(1), "lv1-session", "SKILL.md").exists())
+        shutil.rmtree(Path(kept.group(1)).parent, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()

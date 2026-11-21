@@ -1,0 +1,138 @@
+{
+ "short_names": {},
+ "colours": {
+  "drums": "Red",
+  "bass": "Orange",
+  "guitar": "Green",
+  "keys": "Purple",
+  "vox": "Yellow",
+  "playback": "White",
+  "fx": "Blue",
+  "spare": "OFF"
+ },
+ "inputs": [
+  {
+   "strip": "ch.1",
+   "name": "KICK",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.2",
+   "name": "SNARE",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.3",
+   "name": "HAT",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.4",
+   "name": "OH L",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.5",
+   "name": "OH R",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.6",
+   "name": "BASS",
+   "group": "bass"
+  },
+  {
+   "strip": "ch.7",
+   "name": "GTR",
+   "group": "guitar"
+  },
+  {
+   "strip": "ch.8",
+   "name": "KEYS LR",
+   "group": "keys",
+   "stereo": true
+  },
+  {
+   "strip": "ch.9",
+   "name": "VOX 1",
+   "group": "vox"
+  },
+  {
+   "strip": "ch.10",
+   "name": "VOX 2",
+   "group": "vox"
+  },
+  {
+   "strip": "ch.11",
+   "name": "TRACKS LR",
+   "group": "playback",
+   "stereo": true
+  }
+ ],
+ "dante_playback_groups": [
+  "playback"
+ ],
+ "tio_units": 1,
+ "tio_inputs": 16,
+ "playback_dante_start": 17,
+ "mons": [
+  "MON 1",
+  "MON 2",
+  "MON 3",
+  "MON 4"
+ ],
+ "fx_sends": [
+  {
+   "mix": 7,
+   "name": "REV",
+   "kind": "reverb"
+  },
+  {
+   "mix": 8,
+   "name": "DLY",
+   "kind": "delay"
+  }
+ ],
+ "main_name": "MAIN LR",
+ "matrices": [
+  {
+   "first": 1,
+   "name": "PA",
+   "stereo": true
+  },
+  {
+   "first": 3,
+   "name": "SUB"
+  }
+ ],
+ "dante_outputs": [
+  [
+   "mix",
+   1
+  ],
+  [
+   "mix",
+   2
+  ],
+  [
+   "mix",
+   3
+  ],
+  [
+   "mix",
+   4
+  ],
+  [
+   "matrix",
+   1
+  ],
+  [
+   "matrix",
+   2
+  ],
+  [
+   "matrix",
+   3
+  ]
+ ]
+}

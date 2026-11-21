@@ -1,0 +1,180 @@
+{
+ "colours": {
+  "drums": 9,
+  "bass": 13,
+  "guitar": 5,
+  "keys": 3,
+  "vox": 7,
+  "playback": 17,
+  "mon": 10,
+  "fx": 14,
+  "mtx": 16,
+  "main": 18,
+  "group": 12
+ },
+ "inputs": [
+  {
+   "strip": "ch.1",
+   "name": "KICK",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.2",
+   "name": "SNARE",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.3",
+   "name": "HAT",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.4",
+   "name": "OH L",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.5",
+   "name": "OH R",
+   "group": "drums"
+  },
+  {
+   "strip": "ch.6",
+   "name": "BASS",
+   "group": "bass"
+  },
+  {
+   "strip": "ch.7",
+   "name": "GTR",
+   "group": "guitar"
+  },
+  {
+   "strip": "ch.8",
+   "name": "KEYS LR",
+   "group": "keys",
+   "stereo": true
+  },
+  {
+   "strip": "ch.9",
+   "name": "VOX 1",
+   "group": "vox"
+  },
+  {
+   "strip": "ch.10",
+   "name": "VOX 2",
+   "group": "vox"
+  },
+  {
+   "strip": "ch.11",
+   "name": "TRACKS LR",
+   "group": "playback",
+   "stereo": true
+  }
+ ],
+ "in_sockets": [
+  [
+   "A",
+   32
+  ]
+ ],
+ "out_sockets": [
+  [
+   "A",
+   16
+  ]
+ ],
+ "outputs": [
+  {
+   "src": "BUS",
+   "strip": 1,
+   "name": "MON 1"
+  },
+  {
+   "src": "BUS",
+   "strip": 2,
+   "name": "MON 2"
+  },
+  {
+   "src": "BUS",
+   "strip": 3,
+   "name": "MON 3"
+  },
+  {
+   "src": "BUS",
+   "strip": 4,
+   "name": "MON 4"
+  },
+  {
+   "src": "MTX",
+   "strip": 1,
+   "name": "PA",
+   "stereo": true
+  },
+  {
+   "src": "MTX",
+   "strip": 2,
+   "name": "SUB"
+  }
+ ],
+ "main": {
+  "n": 1,
+  "name": "MAIN LR",
+  "mono": false
+ },
+ "mons": [
+  {
+   "bus": 1,
+   "name": "MON 1"
+  },
+  {
+   "bus": 2,
+   "name": "MON 2"
+  },
+  {
+   "bus": 3,
+   "name": "MON 3"
+  },
+  {
+   "bus": 4,
+   "name": "MON 4"
+  }
+ ],
+ "fx": [
+  {
+   "bus": 13,
+   "name": "REV",
+   "slot": 1,
+   "model": "HALL"
+  },
+  {
+   "bus": 14,
+   "name": "DLY",
+   "slot": 2,
+   "model": "ST-DL"
+  }
+ ],
+ "unused_buses": [
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  15,
+  16
+ ],
+ "matrices": [
+  {
+   "n": 1,
+   "name": "PA",
+   "mono": false
+  },
+  {
+   "n": 2,
+   "name": "SUB",
+   "mono": true
+  }
+ ]
+}

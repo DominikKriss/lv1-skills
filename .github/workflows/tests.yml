@@ -27,6 +27,8 @@ jobs:
           for d in */tests; do
             python3 -m unittest discover -s "$d" -t "$d" -v
           done
+      - name: contribute.sh is the same in every skill
+        run: for f in */scripts/contribute.sh; do cmp lv1-session/scripts/contribute.sh "$f"; done
       - name: ShellCheck
         if: runner.os == 'Linux'
         run: shellcheck */scripts/*.sh

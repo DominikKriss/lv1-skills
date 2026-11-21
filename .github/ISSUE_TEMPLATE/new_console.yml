@@ -1,0 +1,26 @@
+name: New console
+description: Propose or claim a skill for a console that isn't supported yet
+labels: [new console]
+body:
+  - type: markdown
+    attributes:
+      value: New consoles are very welcome. A first version that writes names and patch is a great start.
+  - type: input
+    id: console
+    attributes:
+      label: Console and offline editor (with versions)
+    validations:
+      required: true
+  - type: textarea
+    id: plan
+    attributes:
+      label: What you want it to do first, and what you already know about the file format
+    validations:
+      required: true
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who builds it
+      options: [I'm working on it, I can test files in the editor, Just requesting]
+    validations:
+      required: true

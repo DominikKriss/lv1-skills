@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Opens a pull request to the lv1-skills repo with the changes made to this skill folder,
+# Opens a pull request to the mixing-console-skills repo with the changes made to this skill folder,
 # from the GitHub account that is active in `gh`. Run with --dry-run first and show the output to the user.
 set -euo pipefail
 
-UPSTREAM="DominikKriss/lv1-skills"
+UPSTREAM="DominikKriss/mixing-console-skills"
 usage() {
   cat <<EOF
 usage: contribute.sh --title "<PR title>" --body-file <file> [--branch <name>] [--email <commit email>] [--dry-run]
@@ -40,7 +40,8 @@ if top="$(git -C "$SKILL_DIR" rev-parse --show-toplevel 2>/dev/null)" \
   REL="$(python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$SKILL_DIR" "$REPO")"
 else
   TMP="$(mktemp -d)"
-  trap 'rm -rf "$TMP"' EXIT
+  KEEP_TMP=0
+  trap 'if [ "$KEEP_TMP" = 1 ]; then echo "the commit is kept in $TMP/repo; retry with: bash $TMP/repo/$REL/scripts/contribute.sh --title ... --body-file ..." >&2; else rm -rf "$TMP"; fi' EXIT
   git clone -q "https://github.com/$UPSTREAM.git" "$TMP/repo"
   REPO="$TMP/repo"
   REL="$SKILL_NAME"
@@ -57,8 +58,8 @@ CURRENT="$(git rev-parse --abbrev-ref HEAD)"
 CHANGED="$(git status --porcelain -- "$REL")"
 RESUME=0
 if [ -z "$CHANGED" ]; then
-  # A learn/ branch with skill-only commits: an earlier run committed but didn't finish publishing.
-  if [ "${CURRENT#learn/}" != "$CURRENT" ] && [ -n "$AHEAD" ] \
+  # A learn/ branch, or the branch named with --branch, with skill-only commits: an earlier run committed but didn't finish publishing.
+  if { [ "${CURRENT#learn/}" != "$CURRENT" ] || [ "$CURRENT" = "$BRANCH" ]; } && [ -n "$AHEAD" ] \
      && [ -z "$(git diff --name-only "$UPSTREAM_MAIN" HEAD -- . ":(exclude)$REL")" ]; then
     RESUME=1
     BRANCH="$CURRENT"
@@ -67,8 +68,24 @@ if [ -z "$CHANGED" ]; then
     exit 1
   fi
 fi
-if git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n' | grep -Eiq '\.(emo|scn|dat)$|__pycache__'; then
+PENDING="$(git status --porcelain -z --untracked-files=all -- "$REL" | tr '\0' '\n')"
+if grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$|__pycache__' <<<"$PENDING"; then
   echo "refusing: session / scene files are among the changes; keep them out of the skill folder" >&2
+  exit 4
+fi
+HISTORY_HIT=0 HISTORY_OUTSIDE=0
+for c in $(git rev-list "$UPSTREAM_MAIN..HEAD"); do
+  NAMES="$(git diff-tree -r -m --root --no-commit-id --name-only -z "$c" | tr '\0' '\n')"
+  if grep -Eiq '\.(emo|scn|dat|snap|dmxf|dm7f)$' <<<"$NAMES"; then HISTORY_HIT=1; fi
+  OUTSIDE_NAMES="$(grep -v -e '^$' -e "^$REL/" <<<"$NAMES" || true)"
+  if [ -n "$OUTSIDE_NAMES" ]; then HISTORY_OUTSIDE=1; fi
+done
+if [ "$HISTORY_OUTSIDE" = 1 ]; then
+  echo "refusing: an unpublished commit on this branch changes files outside $REL; they would be published with the history" >&2
+  exit 4
+fi
+if [ "$HISTORY_HIT" = 1 ]; then
+  echo "refusing: an unpublished commit on this branch holds a session / scene file; it would be published with the history" >&2
   exit 4
 fi
 OUTSIDE="$(git diff --cached --name-only -- . ":(exclude)$REL")"
@@ -111,12 +128,14 @@ if [ "$RESUME" = 0 ]; then
   GIT_AUTHOR_NAME="$AUTHOR_NAME" GIT_AUTHOR_EMAIL="$AUTHOR_EMAIL" \
     GIT_COMMITTER_NAME="$AUTHOR_NAME" GIT_COMMITTER_EMAIL="$AUTHOR_EMAIL" git commit -q -m "$TITLE"
 fi
+KEEP_TMP=1
 
 if [ "$LOGIN" = "${UPSTREAM%%/*}" ]; then
   git push -q -u origin "$BRANCH"
 else
   gh repo fork "$UPSTREAM" --clone=false >/dev/null 2>&1 || true
-  FORK_URL="https://github.com/$LOGIN/${UPSTREAM##*/}.git"
+  FORK_NAME="$(gh api "repos/$UPSTREAM/forks" --paginate --jq ".[] | select(.owner.login == \"$LOGIN\") | .name" 2>/dev/null | head -n1 || true)"
+  FORK_URL="https://github.com/$LOGIN/${FORK_NAME:-${UPSTREAM##*/}}.git"
   pushed=0
   for _ in 1 2 3 4 5; do
     if git push -q "$FORK_URL" "$BRANCH"; then pushed=1; break; fi
@@ -129,10 +148,12 @@ EXISTING="$(gh pr list --repo "$UPSTREAM" --head "$BRANCH" --json url,headReposi
   -q ".[] | select(.headRepositoryOwner.login == \"$LOGIN\") | .url" 2>/dev/null || true)"
 if [ -n "$EXISTING" ]; then
   echo "pull request already open: $EXISTING"
+  KEEP_TMP=0
   exit 0
 fi
 PR_URL="$(gh pr create --repo "$UPSTREAM" --base main --head "$HEAD" --title "$TITLE" --body-file "$BODY")" \
   || { echo "opening the PR failed; run this script again on branch $BRANCH to retry" >&2; exit 5; }
 echo "$PR_URL"
+KEEP_TMP=0
 # CodeRabbit reviews repos under 10 stars only on request.
 gh pr comment "$PR_URL" --body "@coderabbitai review" >/dev/null || echo "note: couldn't request the CodeRabbit review; comment '@coderabbitai review' on the PR"
