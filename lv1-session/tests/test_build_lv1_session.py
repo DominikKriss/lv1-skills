@@ -31,6 +31,7 @@ LAYOUT = {
 class Build(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         self.dir = Path(self.tmp.name)
         os.environ["LV1_EMO_PARAMXML_DIR"] = str(fixtures.write_paramxml(self.dir / "paramxml"))
         self.src = fixtures.make_session(self.dir / "src.emo")
@@ -38,7 +39,6 @@ class Build(unittest.TestCase):
 
     def tearDown(self):
         os.environ.pop("LV1_EMO_PARAMXML_DIR", None)
-        self.tmp.cleanup()
 
     def build(self, layout=LAYOUT, scene=None):
         path = self.dir / "layout.json"

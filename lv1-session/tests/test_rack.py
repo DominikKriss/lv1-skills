@@ -23,6 +23,7 @@ class Override(unittest.TestCase):
 class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         self.dir = Path(self.tmp.name)
         self.path = fixtures.make_session(self.dir / "s.emo", snaps=(-1, 0))
         self.donor = fixtures.make_session(self.dir / "donor.emo", inputs=2)
@@ -41,7 +42,6 @@ class Base(unittest.TestCase):
 
     def tearDown(self):
         self.db.close()
-        self.tmp.cleanup()
 
     def rack(self):
         self.db.commit()

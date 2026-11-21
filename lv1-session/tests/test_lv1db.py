@@ -22,10 +22,9 @@ class SendSuffix(unittest.TestCase):
 class Check(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         self.path = fixtures.make_session(Path(self.tmp.name) / "s.emo")
 
-    def tearDown(self):
-        self.tmp.cleanup()
 
     def test_clean_session(self):
         db = sqlite3.connect(self.path)

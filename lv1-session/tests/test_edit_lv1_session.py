@@ -15,6 +15,7 @@ import rack
 class Edit(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         self.dir = Path(self.tmp.name)
         self.src = fixtures.make_session(self.dir / "src.emo", snaps=(-1, 0))
         self.dst = str(self.dir / "out.emo")
@@ -22,8 +23,6 @@ class Edit(unittest.TestCase):
         self.addCleanup(self.src_s.close)
         self.addCleanup(self.src_s.close)
 
-    def tearDown(self):
-        self.tmp.cleanup()
 
     def edit(self, edits):
         path = self.dir / "edits.json"

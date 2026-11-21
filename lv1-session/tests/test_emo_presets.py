@@ -67,13 +67,13 @@ class Q4Values(unittest.TestCase):
 class Apply(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         self.dir = Path(self.tmp.name)
         os.environ["LV1_EMO_PARAMXML_DIR"] = str(fixtures.write_paramxml(self.dir / "paramxml"))
         self.path = fixtures.make_session(self.dir / "s.emo", snaps=(-1, 0))
 
     def tearDown(self):
         os.environ.pop("LV1_EMO_PARAMXML_DIR", None)
-        self.tmp.cleanup()
 
     def apply(self, **channel):
         scene = fixtures.write_scene(self.dir / "s.scn", {1: {"name": "KICK", **channel}})

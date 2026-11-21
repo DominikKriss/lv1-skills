@@ -29,6 +29,7 @@ def git(cwd, *args):
 class Contribute(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
         root = Path(self.tmp.name)
         self.hub = root / "hub"
         upstream = self.hub / "DominikKriss" / "mixing-console-skills.git"
@@ -66,7 +67,6 @@ class Contribute(unittest.TestCase):
     def tearDown(self):
         os.environ.clear()
         os.environ.update(os.environ_backup)
-        self.tmp.cleanup()
 
     def run_script(self, *extra, login="DominikKriss", **env_extra):
         env = dict(self.env, FAKE_GH_LOGIN=login, **env_extra)
@@ -76,7 +76,7 @@ class Contribute(unittest.TestCase):
     def test_dry_run_lists_files_and_changes_nothing(self):
         (self.skill / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
         r = self.run_script("--dry-run")
-        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("GitHub account : DominikKriss", r.stdout)
         self.assertIn("lv1-session/SKILL.md", r.stdout)
         self.assertEqual(git(self.clone, "rev-parse", "--abbrev-ref", "HEAD").strip(), "main")
@@ -87,7 +87,8 @@ class Contribute(unittest.TestCase):
 
     def test_not_logged_in(self):
         (self.skill / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
-        self.assertEqual(self.run_script("--dry-run", login="").returncode, 3)
+        r = self.run_script("--dry-run", login="")
+        self.assertEqual(r.returncode, 3, r.stdout + r.stderr)
 
     def test_scene_file_with_accented_name_is_refused(self):
         (self.skill / "Bänd.scn").write_text("/ch/01/config\n", encoding="utf-8")
@@ -112,7 +113,7 @@ class Contribute(unittest.TestCase):
     def test_maintainer_pushes_a_branch_and_opens_the_pr(self):
         (self.skill / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
         r = self.run_script()
-        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("learn/fix-a-thing", git(self.upstream, "branch", "--list"))
         files = git(self.upstream, "show", "--name-only", "--format=", "learn/fix-a-thing").split()
         self.assertEqual(files, ["lv1-session/SKILL.md"])
@@ -130,7 +131,7 @@ class Contribute(unittest.TestCase):
         git(self.clone, "remote", "add", "fork", "https://github.com/bob/mixing-console-skills.git")
         (self.skill / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
         r = self.run_script(login="alice")
-        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("learn/fix-a-thing", git(fork, "branch", "--list"))
         self.assertNotIn("learn/fix-a-thing", git(bob, "branch", "--list"))
         self.assertIn("--head alice:learn/fix-a-thing", self.log.read_text(encoding="utf-8"))
@@ -150,7 +151,7 @@ class Contribute(unittest.TestCase):
         (self.skill / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
         r = self.run_script("--email", "1+me@users.noreply.github.com", GIT_AUTHOR_EMAIL="private@example.com",
                             GIT_COMMITTER_EMAIL="private@example.com")
-        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         log = git(self.upstream, "log", "-1", "--format=%ae %ce", "learn/fix-a-thing")
         self.assertEqual(log.split(), ["1+me@users.noreply.github.com"] * 2)
 
@@ -169,7 +170,7 @@ class Contribute(unittest.TestCase):
         (self.skill / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
         self.run_script(FAKE_GH_FAIL_PR="1")
         r = self.run_script(FAKE_GH_PR_OPEN="1")
-        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("already open", r.stdout)
 
     def test_learn_branch_with_other_files_is_not_resumed(self):
