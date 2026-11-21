@@ -285,8 +285,12 @@ class Contribute(unittest.TestCase):
         self.assertEqual(r.returncode, 5, r.stdout + r.stderr)
         kept = re.search(r"kept in ([^;\s]+)", r.stderr)
         self.assertIsNotNone(kept, r.stderr)
-        self.assertTrue(Path(kept.group(1), "lv1-session", "SKILL.md").exists())
-        shutil.rmtree(Path(kept.group(1)).parent, ignore_errors=True)
+        path = kept.group(1)
+        if os.name == "nt":
+            path = subprocess.run([BASH, "-c", 'cygpath -w "$1"', "_", path], capture_output=True,
+                                  text=True, check=True).stdout.strip()
+        self.assertTrue(Path(path, "lv1-session", "SKILL.md").exists(), path)
+        shutil.rmtree(Path(path).parent, ignore_errors=True)
 
 
 if __name__ == "__main__":
