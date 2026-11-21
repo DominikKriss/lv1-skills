@@ -40,6 +40,17 @@ class Index(unittest.TestCase):
         self.assertEqual(errors({"0001-first.md": sup,
                                  "README.md": HEAD + ROW.replace("Accepted", "Superseded by 0002")}), [])
 
+    def test_duplicate_number_refused(self):
+        second = ADR.replace("First", "Second")
+        e = errors({"0001-first.md": ADR, "0001-second.md": second,
+                    "README.md": HEAD + "| [0001](0001-second.md) | Second | Accepted | all | 2026-11-21 |\n"})
+        self.assertTrue(any("already used" in x for x in e), e)
+
+    def test_distinct_numbers_ok(self):
+        second = ADR.replace("0001. First", "0002. Second")
+        row2 = "| [0002](0002-second.md) | Second | Accepted | all | 2026-11-21 |\n"
+        self.assertEqual(errors({"0001-first.md": ADR, "0002-second.md": second, "README.md": HEAD + ROW + row2}), [])
+
     def test_real_index(self):
         self.assertEqual(c.check(Path(__file__).resolve().parents[2] / "docs" / "adr"), [])
 

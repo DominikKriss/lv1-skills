@@ -36,6 +36,9 @@ def check(adr_dir):
                 errors.append(f"{p.name}: missing '- **{k}:**' line")
         if meta["Status"] and not STATUS.match(meta["Status"]):
             errors.append(f"{p.name}: status '{meta['Status']}' is not Proposed, Accepted, Deprecated or Superseded by NNNN")
+        if m.group(1) in files:
+            errors.append(f"{p.name}: number {m.group(1)} is already used by {files[m.group(1)][0]}")
+            continue
         files[m.group(1)] = (p.name, title.group(2) if title else None, meta)
     rows = {}
     for line in (adr_dir / "README.md").read_text(encoding="utf-8").splitlines():
