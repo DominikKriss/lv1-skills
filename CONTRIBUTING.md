@@ -34,6 +34,10 @@ New consoles are the contribution we'd love most. You don't need to cover everyt
 
 Questions while you work? Open a draft pull request early; the maintainer is happy to help.
 
+## Decisions and issues
+
+Work is tracked in [GitHub issues](https://github.com/DominikKriss/mixing-console-skills/issues), labelled by type and skill. Decisions that affect more than one skill, or that a contributor would trip over, are recorded as [ADRs](docs/adr/README.md): copy `docs/adr/template.md`, add a row to the index, and propose it in your pull request with status `Proposed`.
+
 ## Pull requests
 
 The easiest way: after a run that taught a skill something, Claude Code offers to open the pull request for you (`<skill>/scripts/contribute.sh`, the same script in every skill, which needs the GitHub CLI logged in). It forks the repo to your account and commits only the skill folder; check the dry-run output for the commit email you want to publish.

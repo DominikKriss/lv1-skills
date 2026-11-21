@@ -1,0 +1,17 @@
+name: Feature or idea
+description: Something a skill should do that it doesn't yet
+labels: [enhancement]
+body:
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Skill
+      options: [lv1-session, wing-snapshot, dm7-session, new skill / other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What you want to do, and why (the show situation helps)
+    validations:
+      required: true
