@@ -58,12 +58,48 @@ def quote(name):
     raise Refuse(f"track name {name!r} has all three quote characters; REAPER can't store it.")
 
 
-def names_from_file(path):
+def norm(name):
+    return re.sub(r"[^a-z0-9]", "", name.lower())
+
+
+def emo_device_names(db, device):
+    rows = db.execute("select d.io_bank * 8 + d.assign, coalesce(n.name, ''), coalesce(w.hostname, '')"
+                      " from device d left join device_name n on n.mac = d.mac and n.gender = d.device_gender"
+                      " left join device_daw w on w.id = d.id where d.device_gender = 1").fetchall()
+    match = [r[0] for r in rows if norm(device) in (norm(r[1]), norm(r[2]))]
+    if len(match) != 1:
+        known = ", ".join(sorted({r[1] or r[2] for r in rows})) or "none"
+        raise Refuse(f"no single DAW device {device!r} in the session; DAW devices: {known}.")
+    names = dict(db.execute("select o.obj_index, s.name from object o join snapshot_chainer s"
+                            " on s.chainer_id = o.id and s.snapshot_id = -1 where o.obj_type = 0"))
+    feeds = {}
+    for lv1, dev, ch, side in db.execute(
+            "select dst_cluster_type_index, src_cluster_type_index, src_channel_index, dst_channel_index"
+            " from routes where src_cluster_type = 10 and dst_cluster_type = 0 order by dst_cluster_type_index"):
+        feeds.setdefault((dev, ch), (lv1, side))
+    stereo = {lv1 for lv1, dev, ch, side in db.execute(
+        "select dst_cluster_type_index, 0, 0, max(dst_channel_index) from routes"
+        " where src_cluster_type = 10 and dst_cluster_type = 0 group by dst_cluster_type_index") if side == 1}
+    out = {}
+    for dst, dev, ch in db.execute("select dst_channel_index, src_cluster_type_index, src_channel_index from routes"
+                                   " where dst_cluster_type = 11 and dst_cluster_type_index = ? and src_cluster_type = 10",
+                                   (match[0],)):
+        if (dev, ch) in feeds:
+            lv1, side = feeds[(dev, ch)]
+            out[dst + 1] = names.get(lv1, "") + ((" R" if side else " L") if lv1 in stereo else "")
+    return out
+
+
+def names_from_file(path, device=None):
     path = Path(path)
     suffix = path.suffix.lower()
+    if device and suffix != ".emo":
+        raise Refuse("--device works with an LV1 .emo session only.")
     if suffix == ".emo":
         db = sqlite3.connect(path.resolve().as_uri() + "?immutable=1", uri=True)
         try:
+            if device:
+                return emo_device_names(db, device)
             rows = db.execute("select o.obj_index, s.name from object o join snapshot_chainer s"
                               " on s.chainer_id = o.id and s.snapshot_id = -1"
                               " where o.obj_type = 0 order by o.obj_index").fetchall()
@@ -233,6 +269,8 @@ def main(argv=None):
     p.add_argument("--stereo", default="", metavar="TRACKS", help="tracks with a stereo input / output pair, e.g. 7,41-42")
     p.add_argument("--master", choices=["on", "off"], help="master / parent send")
     p.add_argument("--names", metavar="FILE", help="track names from an LV1 .emo, X32 .scn, WING .snap or a text list")
+    p.add_argument("--device", metavar="NAME",
+                   help="with an LV1 .emo: name tracks from what LV1 patched to this SoundGrid DAW device")
     p.add_argument("--mode", choices=["rec", "play"], help="rec: arm, no hardware outs; play: disarm, hardware outs")
     p.add_argument("--only", metavar="TRACKS", help="change only these tracks, e.g. 1-40")
     p.add_argument("--src-stereo", action="store_true",
@@ -248,7 +286,7 @@ def main(argv=None):
             raise Refuse("rec mode removes the hardware outs; route --out with --mode play.")
         with open(src, encoding="utf-8", newline="") as f:
             text = f.read()
-        names = names_from_file(a.names) if a.names else None
+        names = names_from_file(a.names, a.device) if a.names else None
         new, report, count = route(
             text, in_map=parse_map(a.ins), out_map=parse_map(a.outs),
             stereo=parse_tracks(a.stereo) if a.stereo else (),

@@ -21,3 +21,19 @@ and 2 were set by hand on tracks 1 and 2.
   `1024` (channel 1 only) and stereo pairs. Record the REAPER version and date in the README status.
 - Whether a mono source from channel 1 plays a centred mono item at the recorded level (the hand-set `0` source
   mixes channels 1/2 to mono, which depends on the pan law).
+
+## LV1 patch to a DAW device (`--device`)
+
+Read from an LV1 17.3 `.emo` (tables `device`, `device_name`, `device_daw`, `routes`); consistent for three devices
+in one session, **unconfirmed** by a controlled save.
+
+- SoundGrid devices are in `device`; `device_gender` 1 = DAW (driver) device. Its display name is
+  `device_name.name` (joined on `mac` and gender), the computer's hostname is `device_daw.hostname`.
+- In `routes`, a device is addressed by `io_bank * 8 + assign`: `src_cluster_type` 10 (Inputs) for what it sends,
+  `dst_cluster_type` 11 (Outputs) for what it receives. `src_channel_index` / `dst_channel_index` are 0-based
+  channels.
+- Device input → LV1 input: `dst_cluster_type` 0, `dst_cluster_type_index` = LV1 input from 0,
+  `dst_channel_index` 0 = left / mono, 1 = right of a stereo input.
+- Recording patch: rows with `dst_cluster_type` 11 and the DAW device's index, source a device input channel
+  (direct I/O, not a channel direct out). The script names a recording channel after the lowest LV1 input fed by
+  the same device channel.

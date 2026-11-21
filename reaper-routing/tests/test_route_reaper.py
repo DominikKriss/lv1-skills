@@ -144,6 +144,45 @@ class Names(unittest.TestCase):
         db.close()
         self.assertEqual(rr.names_from_file(path), {1: "KICK", 2: "SN"})
 
+    def emo_with_patch(self):
+        path = self.dir / "p.emo"
+        db = sqlite3.connect(path)
+        db.executescript(
+            "create table object(id, obj_type, obj_index);"
+            "create table snapshot_chainer(chainer_id, snapshot_id, name);"
+            "create table device(id, device_gender, mac, io_bank, assign);"
+            "create table device_name(mac, gender, key, name);"
+            "create table device_daw(id, hostname, is_local);"
+            "create table routes(src_cluster_type, src_cluster_type_index, src_channel_index,"
+            " dst_cluster_type, dst_cluster_type_index, dst_channel_index);"
+            "insert into object values (10,0,0),(11,0,1),(12,0,2);"
+            "insert into snapshot_chainer values (10,-1,'KICK'),(11,-1,'KEYS'),(12,-1,'SPARE');"
+            "insert into device values (1,0,100,0,1),(7,1,700,1,0),(6,1,600,1,1);"
+            "insert into device_name values (700,1,'k7','REC-PC'),(600,1,'k6','PLAYER');"
+            "insert into device_daw values (7,'REC-PC-HOST',0),(6,'player.local',0);"
+            "insert into routes values (10,1,0, 0,0,0),(10,1,4, 0,1,0),(10,1,5, 0,1,1),(10,1,5, 0,2,0),"
+            "(10,1,0, 11,8,0),(10,1,4, 11,8,2),(10,1,5, 11,8,3),(10,1,9, 11,8,5),(10,1,0, 11,9,0);")
+        db.commit()
+        db.close()
+        return path
+
+    def test_lv1_device_patch(self):
+        path = self.emo_with_patch()
+        expected = {1: "KICK", 3: "KEYS L", 4: "KEYS R"}
+        self.assertEqual(rr.names_from_file(path, "rec-pc"), expected)
+        self.assertEqual(rr.names_from_file(path, "REC_PC_HOST"), expected)
+        self.assertEqual(rr.names_from_file(path, "PLAYER"), {1: "KICK"})
+
+    def test_lv1_device_unknown(self):
+        with self.assertRaisesRegex(rr.Refuse, "PLAYER, REC-PC"):
+            rr.names_from_file(self.emo_with_patch(), "laptop")
+
+    def test_device_needs_emo(self):
+        path = self.dir / "n.txt"
+        path.write_text("A\n", encoding="utf-8")
+        with self.assertRaises(rr.Refuse):
+            rr.names_from_file(path, "rec-pc")
+
     def test_x32_scn(self):
         path = self.dir / "s.scn"
         path.write_text('/ch/01/config "KICK" 1 RD 1\n/ch/02/config "OH L" 2 YE 2\n/bus/01/config "MON" 1 RD\n',

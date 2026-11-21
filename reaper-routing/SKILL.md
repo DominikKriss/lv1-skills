@@ -37,6 +37,7 @@ python3 scripts/route_reaper.py SRC.rpp DEST.rpp [options]
 | `--stereo 7,41-42` | these tracks take an input pair and an output pair starting at the mapped channel (map them to odd channels). |
 | `--master off` | master / parent send off, so playback reaches only the hardware outs. `on` turns it back on. |
 | `--names FILE` | track names: `.emo` (LV1 inputs by index), `.scn` (X32 `/ch/NN/config`), `.snap` (WING `ch.N.name`), `.txt` (one per line), `.csv` (first column). Name N goes to track N. |
+| `--device NAME` | with an LV1 `.emo`: name track N after what LV1 patched to channel N of this SoundGrid DAW device (the recording computer, as LV1's device list or its hostname shows it; case and `-` / `_` / spaces ignored). Stereo LV1 channels get ` L` / ` R`; unpatched channels keep their name. Use this whenever the recording went through an LV1 patch. |
 | `--mode rec` | arm every track and remove its hardware outs (no input echo into the console while recording). |
 | `--mode play` | disarm every track; keeps or sets hardware outs (needs `--out` or outs already in the project). |
 | `--only 1-40` | change only these tracks. |
@@ -45,16 +46,16 @@ python3 scripts/route_reaper.py SRC.rpp DEST.rpp [options]
 Typical virtual soundcheck setup, then switching back to record:
 
 ```sh
-python3 scripts/route_reaper.py show.rpp show_play.rpp --in 1-64 --out 1-64 --master off --names show.emo --mode play
+python3 scripts/route_reaper.py show.rpp show_play.rpp --in 1-64 --out 1-64 --master off --names show.emo --device REC-PC --mode play
 python3 scripts/route_reaper.py show_play.rpp show_rec.rpp --mode rec
 ```
 
 `--mode rec` drops the hardware outs; to play again, run `--mode play --out ...` on the rec file.
 
 The script prints one row per track (name, input, output, master, armed). Check it with the user against the
-console patch: names follow the console's channel order, so they are right only when the recording channels are
-patched 1:1 to the console channels (a stereo console channel on two recording channels shifts them; use
-`--only` and a text list then).
+console patch. Without `--device`, names follow the console's channel order and are right only when the
+recording channels are patched 1:1 to the console channels; with an LV1 session, ask which device recorded and use
+`--device` (a wrong name lists the DAW devices in the session).
 
 ## Learn from the run: offer a pull request
 
