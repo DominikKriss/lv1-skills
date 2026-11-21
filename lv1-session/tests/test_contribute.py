@@ -26,6 +26,20 @@ def git(cwd, *args):
 
 
 @unittest.skipUnless(shutil.which("bash") and shutil.which("git"), "needs bash and git")
+
+def _bash():
+    if os.name != "nt":
+        return "bash"
+    git = shutil.which("git")
+    if git:
+        for cand in (Path(git).parents[1] / "bin" / "bash.exe", Path(git).parents[1] / "usr" / "bin" / "bash.exe"):
+            if cand.exists():
+                return str(cand)
+    return "bash"
+
+
+BASH = _bash()
+
 class Contribute(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -70,7 +84,7 @@ class Contribute(unittest.TestCase):
 
     def run_script(self, *extra, login="DominikKriss", **env_extra):
         env = dict(self.env, FAKE_GH_LOGIN=login, **env_extra)
-        return subprocess.run(["bash", str(self.skill / "scripts" / "contribute.sh"), "--title", "Fix a thing",
+        return subprocess.run([BASH, str(self.skill / "scripts" / "contribute.sh"), "--title", "Fix a thing",
                                "--body-file", str(self.body), *extra], env=env, capture_output=True, text=True)
 
     def test_dry_run_lists_files_and_changes_nothing(self):
@@ -144,7 +158,7 @@ class Contribute(unittest.TestCase):
         (single / "README.md").write_text("local\n", encoding="utf-8")
         git(single, "commit", "-qam", "local")
         (single / "lv1-session" / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
-        r = subprocess.run(["bash", str(single / "lv1-session" / "scripts" / "contribute.sh"), "--title", "t",
+        r = subprocess.run([BASH, str(single / "lv1-session" / "scripts" / "contribute.sh"), "--title", "t",
                             "--body-file", str(self.body), "--dry-run"], env=self.env, capture_output=True, text=True)
         self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
     def test_chosen_email_wins_over_git_identity_variables(self):
@@ -262,7 +276,7 @@ class Contribute(unittest.TestCase):
         copy = Path(self.tmp.name) / "copy" / "lv1-session"
         shutil.copytree(self.skill, copy, ignore=shutil.ignore_patterns(".git"))
         (copy / "SKILL.md").write_text("skill v2\n", encoding="utf-8")
-        r = subprocess.run(["bash", str(copy / "scripts" / "contribute.sh"), "--title", "Fix", "--body-file",
+        r = subprocess.run([BASH, str(copy / "scripts" / "contribute.sh"), "--title", "Fix", "--body-file",
                             str(self.body)], env=dict(self.env, FAKE_GH_FAIL_PR="1"), capture_output=True, text=True)
         self.assertEqual(r.returncode, 5, r.stdout + r.stderr)
         kept = re.search(r"kept in ([^;\s]+)", r.stderr)
