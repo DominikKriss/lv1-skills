@@ -1,6 +1,6 @@
 # Contributing
 
-Found a bug, a wrong value, or something the editor showed differently? Please tell us: every report makes the skills better for the next engineer. Issues and pull requests are welcome for every skill (`lv1-session`, `wing-snapshot`, `dm7-session`). `main` is protected: every change goes through a pull request that the maintainer reviews and merges.
+Found a bug, a wrong value, or something the editor showed differently? Please tell us: every report makes the skills better for the next engineer. Issues and pull requests are welcome for every skill (`lv1-session`, `wing-snapshot`, `dm7-session`). `main` is protected: every change goes through a pull request; CodeRabbit must approve it (it requests changes on actionable findings and approves once they are resolved) and the maintainer merges.
 
 The quickest route: open an issue with the [bug report](https://github.com/DominikKriss/mixing-console-skills/issues/new?template=bug_report.yml) or [format finding](https://github.com/DominikKriss/mixing-console-skills/issues/new?template=format_finding.yml) form. If you use Claude Code, it offers to open the pull request for you after a run that taught a skill something.
 
