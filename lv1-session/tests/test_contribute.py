@@ -1,5 +1,6 @@
 """contribute.sh against local repos: a fake `gh` and file:// remotes stand in for GitHub."""
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -232,6 +233,41 @@ class Contribute(unittest.TestCase):
         git(self.clone, "commit", "-qm", "remove")
         r = self.run_script("--dry-run")
         self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
+    def test_staged_show_file_among_many_changes_is_refused(self):
+        many = self.skill / "many"
+        many.mkdir()
+        for n in range(6000):
+            (many / f"f{n:05d}.txt").write_text("x")
+        (self.skill / "show.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "lv1-session")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+
+    def test_reverted_change_outside_the_skill_is_refused(self):
+        git(self.clone, "checkout", "-q", "-b", "learn/x")
+        (self.skill / "SKILL.md").write_text("skill v2\n")
+        git(self.clone, "commit", "-qam", "skill")
+        (self.clone / "private.dmxf").write_bytes(b"x")
+        git(self.clone, "add", "-f", "private.dmxf")
+        git(self.clone, "commit", "-qm", "oops")
+        git(self.clone, "rm", "-q", "private.dmxf")
+        git(self.clone, "commit", "-qm", "remove")
+        r = self.run_script("--dry-run")
+        self.assertEqual(r.returncode, 4, r.stdout + r.stderr)
+        self.assertIn("outside", r.stderr)
+
+    def test_copied_install_keeps_the_temporary_clone_when_publishing_fails(self):
+        copy = Path(self.tmp.name) / "copy" / "lv1-session"
+        shutil.copytree(self.skill, copy, ignore=shutil.ignore_patterns(".git"))
+        (copy / "SKILL.md").write_text("skill v2\n")
+        r = subprocess.run(["bash", str(copy / "scripts" / "contribute.sh"), "--title", "Fix", "--body-file",
+                            str(self.body)], env=dict(self.env, FAKE_GH_FAIL_PR="1"), capture_output=True, text=True)
+        self.assertEqual(r.returncode, 5, r.stdout + r.stderr)
+        kept = re.search(r"kept in ([^;\s]+)", r.stderr)
+        self.assertIsNotNone(kept, r.stderr)
+        self.assertTrue(Path(kept.group(1), "lv1-session", "SKILL.md").exists())
+        shutil.rmtree(Path(kept.group(1)).parent, ignore_errors=True)
 
 
 if __name__ == "__main__":
