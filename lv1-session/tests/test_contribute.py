@@ -30,11 +30,15 @@ def git(cwd, *args):
 def _bash():
     if os.name != "nt":
         return "bash"
+    found = shutil.which("bash")
+    if found and "system32" not in found.lower():
+        return found
     git = shutil.which("git")
     if git:
-        for cand in (Path(git).parents[1] / "bin" / "bash.exe", Path(git).parents[1] / "usr" / "bin" / "bash.exe"):
-            if cand.exists():
-                return str(cand)
+        for parent in Path(git).parents:
+            for cand in (parent / "bin" / "bash.exe", parent / "usr" / "bin" / "bash.exe"):
+                if cand.exists():
+                    return str(cand)
     return "bash"
 
 
