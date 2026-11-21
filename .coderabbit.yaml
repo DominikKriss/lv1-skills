@@ -3,18 +3,32 @@ language: en-GB
 reviews:
   profile: chill
   high_level_summary: true
+  auto_approvals:
+    enabled: true
+    allow_author_approval: false
+  review_progress: true
+  commit_status: true
+  fail_commit_status: true
+  auto_review:
+    auto_pause_after_reviewed_commits: 0
   path_instructions:
     - path: "**/*.py"
       instructions: |
-        - Python 3 standard library only.
-        - Scripts write .emo sessions (SQLite). They must never write the input file,
-          must end with an integrity check and must keep preset ref_counts correct.
-        - Never guess an LV1 format code: a new field must be backed by a finding
-          in the skill's reference/emo-format.md.
+        - Python 3 standard library only; vendored code under */vendor/ stays unchanged.
+        - Scripts build on a file the console's editor saved, never write their input
+          (or the layout) and refuse unknown fields instead of inventing them.
+        - Never guess a format code: a new field must be backed by a finding in the
+          skill's reference/ folder (LV1: reference/emo-format.md).
+        - LV1 scripts end with an integrity check and keep preset ref_counts correct.
         - Every script change comes with a test in the skill's tests/ folder.
+    - path: "*/scripts/contribute.sh"
+      instructions: |
+        - The same script lives in every skill; CI checks the copies are identical.
+        - It must never publish a show file (.emo, .scn, .dat, .snap, .dmxf, .dm7f)
+          or changes outside the skill folder, in pending changes or in history.
     - path: "*/SKILL.md"
       instructions: |
-        - Script changes must be reflected here and in reference/emo-format.md in the same PR.
+        - Script changes must be reflected here and in the skill's reference/ in the same PR.
         - Keep it generic: no band, venue, channel, device or personal names.
     - path: "**/*.md"
       instructions: |
