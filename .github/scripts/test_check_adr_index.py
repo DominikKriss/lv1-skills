@@ -12,7 +12,7 @@ HEAD = "| # | Title | Status | Scope | Date |\n|---|---|---|---|---|\n"
 def errors(files):
     with tempfile.TemporaryDirectory() as d:
         for name, text in files.items():
-            Path(d, name).write_text(text)
+            Path(d, name).write_text(text, encoding="utf-8")
         return c.check(Path(d))
 
 

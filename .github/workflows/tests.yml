@@ -14,23 +14,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
       - name: Unit tests
         run: |
-          python3 --version
+          PY=""; for c in python3 python; do if "$c" -c "" >/dev/null 2>&1; then PY="$c"; break; fi; done
+          "$PY" --version
           for d in */tests; do
-            python3 -m unittest discover -s "$d" -t "$d" -v
+            "$PY" -m unittest discover -s "$d" -t "$d" -v
           done
       - name: ADR index
         run: |
-          python3 -m unittest discover -s .github/scripts -t .github/scripts -v
-          python3 .github/scripts/check_adr_index.py
+          PY=""; for c in python3 python; do if "$c" -c "" >/dev/null 2>&1; then PY="$c"; break; fi; done
+          "$PY" -m unittest discover -s .github/scripts -t .github/scripts -v
+          "$PY" .github/scripts/check_adr_index.py
       - name: contribute.sh is the same in every skill
         run: for f in */scripts/contribute.sh; do cmp lv1-session/scripts/contribute.sh "$f"; done
       - name: ShellCheck
