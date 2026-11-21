@@ -42,7 +42,7 @@ class Build(unittest.TestCase):
 
     def build(self, layout=LAYOUT, scene=None):
         path = self.dir / "layout.json"
-        path.write_text(json.dumps(layout))
+        path.write_text(json.dumps(layout), encoding="utf-8")
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             build_lv1_session.main(self.src, self.dst, str(path), scene)
@@ -127,7 +127,7 @@ class Build(unittest.TestCase):
 
     def test_command_line(self):
         path = self.dir / "layout.json"
-        path.write_text(json.dumps(LAYOUT))
+        path.write_text(json.dumps(LAYOUT), encoding="utf-8")
         script = fixtures.SCRIPTS / "build_lv1_session.py"
         r = subprocess.run([sys.executable, str(script), self.src, self.dst, str(path)],
                            capture_output=True, text=True)

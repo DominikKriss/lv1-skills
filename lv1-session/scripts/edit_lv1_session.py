@@ -191,7 +191,7 @@ def user_keys(s, e):
 
 
 def main(src, dst, edits_path):
-    e = json.load(open(edits_path))
+    e = json.load(open(edits_path, encoding="utf-8"))
     if "user_keys" in e and any("talkback" in k for k in e["user_keys"]) and "talkback" not in e:
         sys.exit("talkback user keys need the talkback edit in the same file")
     shutil.copyfile(src, dst)

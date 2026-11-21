@@ -26,7 +26,7 @@ class Edit(unittest.TestCase):
 
     def edit(self, edits):
         path = self.dir / "edits.json"
-        path.write_text(json.dumps(edits))
+        path.write_text(json.dumps(edits), encoding="utf-8")
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             edit_lv1_session.main(self.src, self.dst, str(path))
