@@ -40,7 +40,7 @@ Work is tracked in [GitHub issues](https://github.com/DominikKriss/mixing-consol
 
 ## Branch names
 
-Open or pick an issue first, then branch from `main` as `feature/<issue>_<short-desc>` (or `fix/<issue>_<short-desc>` for a bug), e.g. `feature/8_windows-support`, and put `Closes #<issue>` in the pull request. CI checks the branch name. Pull requests opened by Claude Code's `contribute.sh` use `learn/...` branches and are exempt.
+Open or pick an issue first, then branch from `main` as `feature/<issue>_<short-desc>` (or `fix/<issue>_<short-desc>` for a bug), e.g. `feature/8_windows-support`, and put `Closes #<issue>` in the pull request. The short description is lowercase and uses only `a-z`, `0-9`, `-`, `.` and `_`, starting with a letter or digit (`feature/8_Add-console` is rejected). CI checks the branch name. Pull requests opened by Claude Code's `contribute.sh` use `learn/...` branches and are exempt.
 
 ## Pull requests
 
