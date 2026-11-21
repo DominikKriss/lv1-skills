@@ -2,6 +2,16 @@
 
 Read this before changing anything in this repo. `CLAUDE.md` points here.
 
+## Issues and branches
+
+Every change starts from a GitHub issue. Create the issue first, then a branch from `main` named after it:
+
+- `feature/<issue>_<short-desc>` for a change, e.g. `feature/8_windows-support`
+- `fix/<issue>_<short-desc>` for a bug fix
+
+Lowercase, words joined with `-`. The pull request says `Closes #<issue>`. CI fails a pull request whose branch
+doesn't match. Only `learn/...` branches from `contribute.sh` (outside contributors) are exempt.
+
 ## Layout
 
 One folder per skill: `lv1-session/` (Waves eMotion LV1), `wing-snapshot/` (Behringer WING), `dm7-session/`

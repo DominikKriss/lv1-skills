@@ -34,6 +34,10 @@ New consoles are the contribution we'd love most. You don't need to cover everyt
 
 Questions while you work? Open a draft pull request early; the maintainer is happy to help.
 
+## Branch names
+
+Open or pick an issue first, then branch from `main` as `feature/<issue>_<short-desc>` (or `fix/<issue>_<short-desc>` for a bug), e.g. `feature/8_windows-support`, and put `Closes #<issue>` in the pull request. CI checks the branch name. Pull requests opened by Claude Code's `contribute.sh` use `learn/...` branches and are exempt.
+
 ## Pull requests
 
 The easiest way: after a run that taught a skill something, Claude Code offers to open the pull request for you (`<skill>/scripts/contribute.sh`, the same script in every skill, which needs the GitHub CLI logged in). It forks the repo to your account and commits only the skill folder; check the dry-run output for the commit email you want to publish.
