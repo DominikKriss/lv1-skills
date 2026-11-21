@@ -31,7 +31,7 @@ foreach ($s in 'lv1-session','wing-snapshot','dm7-session') {
 }
 ```
 
-Then ask Claude Code about your show, or run `/lv1-session`, `/wing-snapshot` or `/dm7-session`. `git -C ~/mixing-console-skills pull` updates.
+Then ask Claude Code about your show, or run `/lv1-session`, `/wing-snapshot` or `/dm7-session`. `git -C ~/mixing-console-skills pull` updates (PowerShell: `git -C "$HOME\mixing-console-skills" pull`).
 
 ## Requirements
 

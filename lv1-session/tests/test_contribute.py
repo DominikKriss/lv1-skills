@@ -25,8 +25,6 @@ def git(cwd, *args):
     return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
 
 
-@unittest.skipUnless(shutil.which("bash") and shutil.which("git"), "needs bash and git")
-
 def _bash():
     if os.name != "nt":
         return "bash"
@@ -44,6 +42,8 @@ def _bash():
 
 BASH = _bash()
 
+
+@unittest.skipUnless(shutil.which(BASH) and shutil.which("git"), "needs bash and git")
 class Contribute(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
