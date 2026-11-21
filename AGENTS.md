@@ -16,7 +16,8 @@ Every change starts from a GitHub issue. Create the issue first, then a branch f
 - `fix/<issue>_<short-desc>` for a bug fix
 
 The short description is lowercase: `a-z`, `0-9`, `-`, `.`, `_`, starting with a letter or digit; words joined with `-`. The pull request says `Closes #<issue>`. CI fails a pull request whose branch
-doesn't match. Only `learn/...` branches from `contribute.sh` (outside contributors) are exempt.
+doesn't match. Only `learn/...` branches from `contribute.sh` (outside contributors) are exempt, from the branch name and the
+`Closes #<issue>` reference, until #11 makes contributions start from an issue too.
 
 ## Layout
 
