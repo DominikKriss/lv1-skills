@@ -27,7 +27,7 @@ def git(cwd, *args):
 
 def _bash():
     if os.name != "nt":
-        return "bash"
+        return shutil.which("bash")
     found = shutil.which("bash")
     if found and "system32" not in found.lower():
         return found
@@ -37,13 +37,13 @@ def _bash():
             for cand in (parent / "bin" / "bash.exe", parent / "usr" / "bin" / "bash.exe"):
                 if cand.exists():
                     return str(cand)
-    return "bash"
+    return None
 
 
 BASH = _bash()
 
 
-@unittest.skipUnless(shutil.which(BASH) and shutil.which("git"), "needs bash and git")
+@unittest.skipUnless(BASH and shutil.which("git"), "needs Git Bash (or bash) and git")
 class Contribute(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

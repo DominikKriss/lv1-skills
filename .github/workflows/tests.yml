@@ -33,8 +33,9 @@ jobs:
           done
       - name: ADR index
         run: |
-          python3 -m unittest discover -s .github/scripts -t .github/scripts -v
-          python3 .github/scripts/check_adr_index.py
+          PY="$(command -v python3 || command -v python)"
+          "$PY" -m unittest discover -s .github/scripts -t .github/scripts -v
+          "$PY" .github/scripts/check_adr_index.py
       - name: contribute.sh is the same in every skill
         run: for f in */scripts/contribute.sh; do cmp lv1-session/scripts/contribute.sh "$f"; done
       - name: ShellCheck
