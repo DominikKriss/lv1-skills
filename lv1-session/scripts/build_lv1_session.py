@@ -156,6 +156,8 @@ def main(src, dst, layout_path, x32=None):
     bad = cur.execute("select count(*) from plugin_preset pp where ref_count !="
                       " (select count(*) from snapshot_plugin sp where sp.preset_id=pp.id)").fetchone()[0]
     db.close()
+    if donor:
+        donor.close()
     print(f"wrote {dst} (snapshots {snaps}), integrity: {ok}, preset refs {refs[0]}/{refs[1]},"
           f" presets with wrong ref_count: {bad}")
 

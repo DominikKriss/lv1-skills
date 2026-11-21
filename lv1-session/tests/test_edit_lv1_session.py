@@ -20,6 +20,7 @@ class Edit(unittest.TestCase):
         self.dst = str(self.dir / "out.emo")
         self.src_s = fixtures.Session(self.src)
         self.addCleanup(self.src_s.close)
+        self.addCleanup(self.src_s.close)
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -31,6 +32,7 @@ class Edit(unittest.TestCase):
         with contextlib.redirect_stdout(out):
             edit_lv1_session.main(self.src, self.dst, str(path))
         self.s = fixtures.Session(self.dst)
+        self.addCleanup(self.s.close)
         self.addCleanup(self.s.close)
         return out.getvalue()
 

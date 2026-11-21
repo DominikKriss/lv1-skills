@@ -48,6 +48,7 @@ class Build(unittest.TestCase):
             build_lv1_session.main(self.src, self.dst, str(path), scene)
         self.s = fixtures.Session(self.dst)
         self.addCleanup(self.s.close)
+        self.addCleanup(self.s.close)
         return out.getvalue()
 
     def send(self, t, i, mon, what="GAIN"):
@@ -106,6 +107,7 @@ class Build(unittest.TestCase):
 
     def test_mono_layout_input_on_a_stereo_source_input(self):
         db = sqlite3.connect(self.src)
+        self.addCleanup(db.close)
         oid = db.execute("select id from object where obj_type=0 and obj_index=0").fetchone()[0]
         rack.set_stereo(db.cursor(), oid, [-1])
         db.commit()

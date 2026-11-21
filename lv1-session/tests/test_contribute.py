@@ -44,7 +44,7 @@ class Contribute(unittest.TestCase):
                         PATH=f"{root / 'bin'}{os.pathsep}{os.environ['PATH']}")
         (root / "gitconfig").write_text(
             f'[user]\n  name = Test\n  email = test@example.com\n[init]\n  defaultBranch = main\n'
-            f'[url "file://{self.hub}/"]\n  insteadOf = https://github.com/\n', encoding="utf-8")
+            f'[url "{self.hub.as_uri()}/"]\n  insteadOf = https://github.com/\n', encoding="utf-8")
         (root / "bin").mkdir()
         (root / "bin" / "gh").write_text(FAKE_GH, encoding="utf-8")
         (root / "bin" / "gh").chmod(0o755)

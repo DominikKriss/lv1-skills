@@ -29,6 +29,7 @@ class Diff(unittest.TestCase):
 
     def change(self, sql, *args):
         db = sqlite3.connect(self.b)
+        self.addCleanup(db.close)
         db.execute(sql, args)
         db.commit()
         db.close()

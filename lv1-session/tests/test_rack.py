@@ -27,6 +27,7 @@ class Base(unittest.TestCase):
         self.path = fixtures.make_session(self.dir / "s.emo", snaps=(-1, 0))
         self.donor = fixtures.make_session(self.dir / "donor.emo", inputs=2)
         db = sqlite3.connect(self.donor)
+        self.addCleanup(db.close)
         cur = db.cursor()
         ids = [r[0] for r in cur.execute("select id from object where obj_type=0 order by obj_index")]
         fixtures.add_plug(cur, ids[0], 3, "Q10", "EQ1M", fixtures.chunk("Q10", "EQ1M", Q10_VALUES), [-1])
@@ -34,6 +35,7 @@ class Base(unittest.TestCase):
         db.commit()
         db.close()
         self.db = sqlite3.connect(self.path)
+        self.addCleanup(self.db.close)
         self.cur = self.db.cursor()
         self.chainer = self.cur.execute("select id from object where obj_type=0 and obj_index=0").fetchone()[0]
 
@@ -44,6 +46,7 @@ class Base(unittest.TestCase):
     def rack(self):
         self.db.commit()
         s = fixtures.Session(self.path)
+        self.addCleanup(s.close)
         r = s.rack(T_INPUT, 0)
         s.close()
         return r
@@ -71,8 +74,13 @@ class SetMono(Base):
 class BuildRack(Base):
     CFG = {"Q10": {"default": {"mono": "IN 1", "stereo": "IN 2"}, "override": {"102": 7, "103": 7}}}
 
+    def _donor(self):
+        d = rack.Donor(self.donor)
+        self.addCleanup(d.close)
+        return d
+
     def build(self, slots, stereo=False, cfg=None):
-        return rack.build_rack(self.cur, self.chainer, stereo, slots, rack.Donor(self.donor), cfg or self.CFG,
+        return rack.build_rack(self.cur, self.chainer, stereo, slots, self._donor(), cfg or self.CFG,
                                "IN 1", [-1, 0])
 
     def test_emo_moved_donor_plugin_added(self):
@@ -81,6 +89,7 @@ class BuildRack(Base):
                                        (7, "Q10", "EQ1M")])
         self.assertEqual(notes, ["Q10<-IN 1"])
         s = fixtures.Session(self.path)
+        self.addCleanup(s.close)
         text = s.preset(T_INPUT, 0, "Q10", snap=0)
         s.close()
         self.assertIn("7 7", text)
